@@ -15,7 +15,7 @@ Team
 |Name| 	Student Id|Email|
 |-|-|-|
 |Phoebe Elikem Amable|||
-|Aye Sandar Maung|||
+|Aye Sandar Maung|300394351|maunga1@student.douglascollege.ca|
 
 
 
