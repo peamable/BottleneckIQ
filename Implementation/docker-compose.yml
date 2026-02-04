@@ -1,0 +1,24 @@
+services:
+    db:
+        image: mysql:8.0
+        container_name: ed_bottleneck_mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: p03a07
+            MYSQL_DATABASE: ed_bottleneck
+            MYSQL_USER: ed_app_user
+            MYSQL_PASSWORD: ed_app_pw
+        ports:
+        - "3307:3307"
+        volumes:
+        - ed_bottleneck_db:/var/lib/mysql
+
+    adminer:
+        image: adminer
+        ports:
+            - "8081:8080"
+        depends_on:
+            - db 
+        
+
+volumes:
+  ed_bottleneck_db:
