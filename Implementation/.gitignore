@@ -2,6 +2,10 @@
 # Allow documentation only
 !README.md
 
+# Untrack sensitive data
+backend/data/input/
+backend/data/output/
+
 # Raw data
 *.csv
 *.xlsx
@@ -54,3 +58,4 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
