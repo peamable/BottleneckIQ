@@ -1,0 +1,59 @@
+/* 1. The Card itself */
+.empty_state_card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;    /* Centers icon, title, and button horizontally */
+  justify-content: center; /* Centers them vertically if needed */
+  text-align: center;
+  
+  background-color: rgba(30, 41, 59, 0.5); /* Semi-transparent navy */
+  border: 2px dashed #475569; /* Dashed border suggests 'Empty Slot' */
+  border-radius: 16px;
+  
+  padding: 4rem;
+  max-width: 500px;
+  width: 100%;
+  margin: 0 auto; /* Extra insurance for centering */
+}
+
+/* 2. The Icon spacing */
+.empty_icon_wrapper {
+  margin-bottom: 1.5rem;
+  background: rgba(148, 163, 184, 0.1);
+  padding: 20px;
+  border-radius: 50%; /* Makes a nice circular background for the icon */
+}
+
+/* 3. The Text (Ensuring it's visible on Navy) */
+.empty_state_card h2 {
+  color: #f8fafc; /* Near white */
+  font-size: 1.75rem;
+  margin-bottom: 1rem;
+}
+
+.empty_state_card p {
+  color: #94a3b8; /* Muted slate/grey */
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+/* 4. The Button */
+.btn_primary_large {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #2563eb;
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn_primary_large:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-2px);
+}

@@ -1,0 +1,40 @@
+.main_footer {
+  background-color: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  padding: 1.5rem 2rem;
+  margin-top: auto; /* IMPORTANT: This pushes the footer to the bottom of the page */
+}
+
+.footer_content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto; /* Centers the footer content within the full-width bar */
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.footer_right {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.status_indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.footer_link {
+  text-decoration: none;
+  color: #64748b;
+  transition: color 0.2s;
+}
+
+.footer_link:hover {
+  color: #2563eb;
+}
