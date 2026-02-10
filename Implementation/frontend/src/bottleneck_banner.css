@@ -1,0 +1,59 @@
+.bottleneck_banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  /* 1. THE TRANSPARENT YELLOW BACKGROUND */
+  /* rgba(245, 158, 11, 0.15) = Amber color at 15% opacity */
+  background-color: rgba(245, 158, 11, 0.15); 
+  
+  /* 2. THE BORDER */
+  /* Using a slightly more solid version of the same color */
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-left: 6px solid #f59e0b; 
+  
+  border-radius: 8px;
+  padding: 1.25rem 2rem;
+  margin: 1.5rem 0;
+  width: 100%;
+  box-sizing: border-box;
+  
+  /* 3. OPTIONAL: Backdrop filter makes it look like 'Frosted Glass' 
+     This works great if the page background is navy blue */
+  backdrop-filter: blur(4px);
+}
+
+.banner_label {
+  color: #fbbf24; /* Bright amber */
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.banner_main_text {
+  /* White text usually reads best on a tinted dark background */
+  color: #ffffff; 
+  margin: 4px 0 0 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.stage_highlight {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+/* Button stays solid to provide contrast */
+.banner_action_btn {
+  background-color: #f59e0b;
+  color: #0f172a;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1.2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}

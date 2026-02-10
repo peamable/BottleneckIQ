@@ -1,42 +1,255 @@
+
+/* 1. Global Reset: Remove all the Vite centering logic */
 #root {
-  max-width: 1280px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left; /* Essential for your ED flow analytics dashboard */
+}
+
+/* 2. Layout Wrapper: Ensure the blue header stays on top and content follows */
+.App {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  background-color: #fcfcfc; /* Very light grey so the white cards stand out */
+}
+
+/* 3. The Grid Container: Center just the cards, not the whole world */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  max-width: 1100px; /* Gives the cards room to breathe */
+  width: 90%;
+  margin: 4rem auto; /* Centers the grid horizontally */
+}
+
+/* 4. Landing Page Alignment */
+.landing-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centers the title and grid together */
+  width: 100%;
+  padding-top: 5rem;
+}
+/* .landing-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  font-family: sans-serif;
+  background-color: #ffffff;
+} */
+
+.landing-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.landing-header h1 {
+  font-size: 2.5rem;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+}
+
+.landing-header p {
+  color: #64748b;
+  font-size: 1.1rem;
+}
+
+/* .card-grid {
+  display: grid;
   margin: 0 auto;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  max-width: 1000px;
+  width: 90%;
+} */
+
+.nav-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 2.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.nav-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  border-color: #bfdbfe;
+}
+
+.icon-wrapper {
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.nav-card h3 {
+  margin: 0.5rem 0;
+  color: #1e293b;
+  font-size: 1.25rem;
+}
+
+.nav-card p {
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.upload-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+}
+
+.upload-card {
+  background: white;
   padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 500px;
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3rem;
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  margin: 1.5rem 0;
+  transition: background 0.2s;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.drop-zone:hover {
+  background: #f8fafc;
+  border-color: #3b82f6;
 }
 
-.card {
-  padding: 2em;
+.file-preview {
+  display: flex;
+  align-items: center;
+  background: #f0fdf4;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1.5rem 0;
+  border: 1px solid #dcfce7;
 }
 
-.read-the-docs {
-  color: #888;
+.file-info {
+  flex: 1;
+  text-align: left;
+  margin: 0 1rem;
+}
+
+.file-name {
+  display: block;
+  font-weight: 600;
+  color: #166534;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 0.75rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary.disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+/* Modal Popup when the backend is running */
+/* The dark background behind the popup */
+.modal_overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.7); /* Dark semi-transparent */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Makes it sit on top of everything */
+}
+
+/* The popup box itself */
+.modal_content {
+  background: white;
+  padding: 3rem;
+  border-radius: 16px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+/* The spinning animation */
+.spinner {
+  color: #2563eb;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1.5rem;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* The "Fake" Progress Bar */
+.progress_bar_container {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 10px;
+  margin-top: 1.5rem;
+  overflow: hidden;
+}
+
+.progress_bar_fill {
+  height: 100%;
+  background: #2563eb;
+  width: 50%; /* You can animate this later */
+  animation: loading_bar 2.5s ease-in-out forwards;
+}
+
+@keyframes loading_bar {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+
+
+/* View Metrics Page */
+/* 1. The Wrapper: Fills the screen width and height */
+.view_metrics_page_wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center; /* Horizontally centers the inner container */
+  min-height: 80vh;        /* Ensures the page has height even if empty */
+}
+
+/* 2. The Container: Holds your content (Banner or Empty State) in the middle */
+.metrics_content_container {
+  width: 90%;
+  max-width: 1200px;      /* Keeps the dashboard from getting too wide */
+  display: flex;
+  flex-direction: column;
+  align-items: center;    /* Centers the Empty State card horizontally */
+  padding-top: 4rem;      /* Gives space under the Header */
 }
