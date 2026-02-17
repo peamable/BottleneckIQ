@@ -17,7 +17,7 @@ function App() {
       
       <div className='App'>
          <Header/>
-         <BottleneckBanner/>
+         {/* <BottleneckBanner/> */}
          <div className="page-content">
         <Routes>
           <Route path='/' element= {<MainPage/>}></Route>

@@ -66,3 +66,91 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.metrics_grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  margin-top: 2rem;
+}
+
+.metric_card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 1.5rem;
+  position: relative;
+}
+
+.bottleneck_border {
+  border: 1px solid #f59e0b;
+}
+
+.card_header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.card_title {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.bottleneck_tag {
+  background: #78350f;
+  color: #fbbf24;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.stat_value {
+  display: block;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.stat_value.highlight {
+  color: #10b981; /* Green highlight from your image */
+}
+
+.stat_label {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.main_chart_container {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-top: 2rem;
+  width: 100%;
+}
+
+/* This class targets ONLY the viewMetrics page */
+.view_metrics_page_wrapper {
+  /* Spans the full screen */
+  min-height: 100vh;
+  width: 100%;
+  
+  /* Your specific background color or gradient */
+  background-color: #CCCCFF !important; /* Example: Deep Navy/Slate from your dashboard */
+  
+  /* If you want a subtle gradient like in your reference image */
+  /* background: radial-gradient(circle at top left, #1e293b, #0f172a); */
+
+  /* Resets any default margins that might cause white gaps */
+  margin: 0;
+  padding: 0;
+  
+  /* Ensures the content inside is still centered */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
