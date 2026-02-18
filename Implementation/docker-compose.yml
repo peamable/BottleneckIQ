@@ -12,7 +12,7 @@ services:
         - "127.0.0.1:3307:3306"
         volumes:
         - ed_bottleneck_db:/var/lib/mysql
-
+    
     adminer:
         image: adminer
         ports:

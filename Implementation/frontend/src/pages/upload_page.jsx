@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FileUp, FileCheck, X, Loader2, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import FileUpload from '../components/upload_file';
 
 const UploadPage = () => {
   // 1. STATE: We use 'useState' to track if a file has been picked.
@@ -21,15 +22,41 @@ const UploadPage = () => {
     setFile(null);
   };
 
-  //  This handles the "Process" button click
-  const handle_upload = () => {
+  //  handle_upload move to upload_file
+
+  const handleStart = () => {
     set_is_processing(true);
     set_is_finished(false);
+  };
 
-    // Mocking the backend delay for 4 seconds. To be removed when we get response from backend
-    setTimeout(() => {
-      set_is_finished(true);
-    }, 4000);
+  const handleSuccess = () => {
+    set_is_finished(true);
+  };
+
+  const handleError = (err) => {
+    console.error(err);
+    set_is_processing(false);
+    set_is_finished(false);
+  };
+
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragOver = (e) => {
+    e.preventDefault(); // required, otherwise drop is blocked
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+  const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile) setFile(droppedFile);
   };
 
   return (
@@ -40,9 +67,15 @@ const UploadPage = () => {
 
         {/* CONDITIONAL RENDERING: 
              If no file is selected, show the upload box.
-             If a file exists, show the "File Selected" view. */}
+             If a file exists, show the "File Selected" view.
+             --- EDITED DROP ZONE ---- */}
         {!file ? (
-          <label className="drop-zone">
+          <label 
+            className={`drop-zone ${isDragging ? 'dragging': ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
             <FileUp size={48} className="icon-blue" />
             <span>Click or drag CSV file here</span>
             <input type="file" onChange={handleFileChange} hidden accept=".csv" />
@@ -60,15 +93,14 @@ const UploadPage = () => {
           </div>
         )}
 
-        {/* THE ACTION BUTTON: Only "Ok" (Submit) if a file exists */}
-        <button 
-          className={`btn-primary ${!file ? 'disabled' : ''}`}
-          disabled={!file}
-          //onClick={() => alert("File sent to Backend ETL Pipeline!")}
-          onClick={handle_upload}
-        >
-          Process Dataset
-        </button>
+        <FileUpload
+          file={file}
+          onUploadStart={handleStart}
+          onUploadSuccess={handleSuccess}
+          onUploadError={handleError}
+        />       
+
+        {/* THE ACTION BUTTON part move to upload_file */}
       </div>
 
      {is_processing && (
