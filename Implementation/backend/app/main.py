@@ -1,34 +1,21 @@
-import os
-from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
-from sqlalchemy import create_engine, text, inspect
+from sqlalchemy import text, inspect
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.database import engine
+from app.router.upload import router as upload_router
 
 
-# Load .env from implementation folder 
-load_dotenv() 
 
 app = FastAPI(title="ED Bottleneck API")
 
-# connect fastapi and mySQL db on localhost and port
-def get_db_url() -> str:
-    db_user = os.getenv("DB_USER", "")
-    db_pw = os.getenv("DB_PASSWORD", "")
-    db_name = os.getenv("DB_NAME", "")
-    db_host = os.getenv("DB_HOST", "127.0.0.1")
-    db_port = os.getenv("DB_PORT", "3307")
-
-   
-   
-    if not all([db_user, db_pw, db_name]):
-        raise RuntimeError("Missing DB env vars. Check .env (DB_USER, DB_PASSWORD, DB_NAME).")
-
-   
-    return f"mysql+pymysql://{db_user}:{db_pw}@{db_host}:{db_port}/{db_name}"
-
- 
-# create engine to communicate with fastAPI
-engine = create_engine(get_db_url(), pool_pre_ping=True)
-
+# allow request from frontend side
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # test simple API  
 @app.get("/test_ed")
@@ -36,7 +23,7 @@ def test():
     return {"status": "ok"}
 
 
-# test db connection is working file
+# test db connection is working fine
 @app.get("/db-connect")
 def db_connect():
     try:
@@ -58,5 +45,11 @@ def list_db_tables():
         "tables": tables,
         "count": len(tables)
     }
+
+
+app.include_router(upload_router)
+
+
+
 
 
