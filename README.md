@@ -23,8 +23,8 @@ Team
 ## Backend setup
 
 1. Install Python 3.13.11
-## 2. Create venv
-# 2.1. Create a virtual environment named ".venv"
+# 2. Create venv
+## 2.1. Create a virtual environment named ".venv"
     python -m venv .venv
 # 2.2. Activate the virtual environment
     .venv\Scripts\activate
