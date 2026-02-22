@@ -18,11 +18,16 @@ Team
 |Aye Sandar Maung|300394351|maunga1@student.douglascollege.ca|
 
 
-## Installation instruction
+# Installation instruction
+# Prerequisites
 
-## Backend setup
+Before running the project, make sure you have:
 
-1. Install Python 3.13.11
+- Node.js (includes npm) → https://nodejs.org
+- Python 3.10+ 
+- pip
+
+# Backend setup
 # 2. Create venv
 ## 2.1. Create a virtual environment named ".venv"
     python -m venv .venv
@@ -34,30 +39,23 @@ Team
 4. docker compose up -d
 5. uvicorn app.main:app --reload
 
-## Prerequisites
 
-Before running the project, make sure you have:
 
-Node.js (includes npm) → https://nodejs.org
-Python 3.10+
-pip
+# Frontend Installation
+## check for node and npm installations
+- node -v
+- npm -v
+- python --version
+- pip --version
+## navigate to frontend folder
+### run the following commands
+- npm install
+### Chart libraries
+- npm install recharts
+- npm install react-plotly.js plotly.js
 
-## Frontend Installation
-# check for node and npm installations
-node -v
-npm -v
-python --version
-pip --version
-# navigate to frontend folder
-
-npm install
-
-## Chart libraries
-npm install recharts
-npm install react-plotly.js plotly.js
-
-## for icons
-npm install lucide-react
-
-nom run dev
+### for icons
+- npm install lucide-react
+### finally run the project 
+- npm run dev
 
