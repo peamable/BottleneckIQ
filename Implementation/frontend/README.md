@@ -16,9 +16,29 @@ The React Compiler is not enabled on this template because of its impact on dev 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 
 
+## Prerequisites
+
+Before running the project, make sure you have:
+
+Node.js (includes npm) → https://nodejs.org
+Python 3.10+
+pip
+
+## Frontend Installation
+# check for node and npm installations
+node -v
+npm -v
+python --version
+pip --version
+# navigate to frontend folder
+
+npm install
+
 ## Chart libraries
 npm install recharts
 npm install react-plotly.js plotly.js
 
 ## for icons
 npm install lucide-react
+
+nom run dev

@@ -1,0 +1,216 @@
+/* --- VIEW METRICS PAGE WRAPPER --- */
+.view_metrics_page_wrapper {
+  min-height: 100vh;
+  width: 100%;
+  /* Using !important to override any global body backgrounds */
+  background-color: #cccceb !important; 
+  margin: 0;
+  padding: 0 2rem 2rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.dashboard_container {
+  width: 100%;
+  max-width: 1600px; /* Prevents extreme stretching on wide monitors */
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+/* --- TOP ROW: KPI CARDS --- */
+.metrics_grid_flow {
+  display: grid;
+  /* 5 columns to visualize the linear flow of the ED stages */
+  grid-template-columns: repeat(5, 1fr); 
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.metric_card_mini {
+  background: #F1F5F9;
+  border: 1px solid #B2B2FF;
+  border-radius: 10px;
+  padding: 1.25rem;
+  box-shadow: 0 4px 12px rgba(204, 204, 255, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s ease;
+}
+
+.metric_card_mini:hover {
+  transform: translateY(-2px);
+}
+
+/* --- TREND INDICATORS --- */
+.trend_indicator {
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+}
+
+.trend_up { color: #ef4444; }    /* Red for increased time (bottleneck) */
+.trend_down { color: #10b981; }  /* Green for decreased time (efficiency) */
+
+/* --- CHART & VISUAL CONTAINERS --- */
+.trend_chart_section, .visual_container {
+  background: #F1F5F9;
+  border: 1px solid #B2B2FF;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.chart_controls_row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.75rem;
+}
+
+.visual_header {
+  color: #1E293B;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* --- BOTTOM ROW LAYOUT --- */
+.data_visual_row {
+  display: grid;
+  /* Volume chart gets more real estate (1.5x) than the Acuity Table */
+  grid-template-columns: 1.5fr 1fr; 
+  gap: 1.5rem;
+  width: 100%;
+}
+
+/* --- ACUITY TABLE STYLING --- */
+.acuity_table_labels {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 0.5rem;
+}
+
+.acuity_row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.acuity_name {
+  color: #1e293b; /* Deep Indigo for the labels */
+  font-weight: 500;
+}
+.acuity_name_wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.acuity_color_indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px; /* Slightly rounded squares match the bar chart feel */
+  display: inline-block;
+}
+
+.stat_avg {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.benchmark_pill {
+  justify-self: start;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.pill_warning { background-color: #fee2e2; color: #b91c1c; }
+.pill_good { background-color: #dcfce7; color: #15803d; }
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 1100px) {
+  .metrics_grid_flow {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .data_visual_row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- HERO CARD SPECIAL STYLING --- */
+.metric_card_mini.hero_card {
+  background: #ffffff; /* Brighter than the other cards to draw the eye */
+  border: 2px solid #4338CA; /* Thicker indigo border */
+  box-shadow: 0 6px 15px rgba(67, 56, 202, 0.2); /* Stronger indigo glow */
+}
+
+.hero_card .stat_label_mini {
+  color: #4338CA;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.hero_card .stat_value_large {
+  color: #1e1b4b; /* Darker ink for the big number */
+}
+
+/* Adjust the grid to 6 columns instead of 5 */
+.metrics_grid_flow {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr); 
+  gap: 1.25rem;
+  width: 100%;
+}
+
+/* --- DATA HORIZON STYLING --- */
+.data_horizon_badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* Aligns to the right side of the bar */
+  gap: 2px;
+}
+
+.horizon_label {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.horizon_value {
+  font-size: 0.85rem;
+  color: #1e293b;
+  font-weight: 600;
+  background: #e2e8f0;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.sync_status {
+  font-size: 0.7rem;
+  color: #10b981; /* Green for "Live/Active" */
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
