@@ -19,3 +19,30 @@ Team
 
 
 
+## Prerequisites
+
+Before running the project, make sure you have:
+
+Node.js (includes npm) → https://nodejs.org
+Python 3.10+
+pip
+
+## Frontend Installation
+# check for node and npm installations
+node -v
+npm -v
+python --version
+pip --version
+# navigate to frontend folder
+
+npm install
+
+## Chart libraries
+npm install recharts
+npm install react-plotly.js plotly.js
+
+## for icons
+npm install lucide-react
+
+nom run dev
+

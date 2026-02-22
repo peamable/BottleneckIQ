@@ -41,4 +41,4 @@ npm install react-plotly.js plotly.js
 ## for icons
 npm install lucide-react
 
-nom run dev
+npm run dev
