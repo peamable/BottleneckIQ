@@ -25,10 +25,7 @@ const BottleneckBanner = ({ stage_name, delay_time }) => {
       <button 
         className="banner_action_btn" 
         onClick={() => navigate('/insights')}
-      >
-        View Recommendations
-        <ChevronRight size={18} />
-      </button>
+      > Insights<ChevronRight size={18} /></button>
     </div>
   );
 };

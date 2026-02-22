@@ -115,8 +115,20 @@
 }
 
 .acuity_name {
-  color: #4338CA; /* Deep Indigo for the labels */
+  color: #1e293b; /* Deep Indigo for the labels */
   font-weight: 500;
+}
+.acuity_name_wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.acuity_color_indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px; /* Slightly rounded squares match the bar chart feel */
+  display: inline-block;
 }
 
 .stat_avg {

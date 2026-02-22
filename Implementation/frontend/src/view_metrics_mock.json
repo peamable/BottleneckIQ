@@ -1,0 +1,93 @@
+{
+  "horizon_display": "Feb 12, 2026 | 08:00 - 14:00",
+  "sync_time": "2m ago",
+  "summary": {
+  "avg_stay": { "value": 110, "trend": 10, "direction": "up" }, 
+  "entry_to_triage": { "value": 42, "trend": 2, "direction": "up" },
+  "triage_to_vitals": { "value": 18, "trend": 3, "direction": "up" },
+  "vitals_to_medrecon": { "value": 135, "trend": 10, "direction": "down" },
+  "medrecon_to_dispense": { "value": 28, "trend": 3, "direction": "up" },
+  "dispense_to_exit": { "value": 50, "trend": 5, "direction": "up" }
+  },
+  "volume_chart": [
+    { "hour": "08:00", "Level 1": 2, "Level 2": 5, "Level 3": 8, "Level 4": 10, "Level 5": 4 },
+    { "hour": "09:00", "Level 1": 1, "Level 2": 8, "Level 3": 12, "Level 4": 7, "Level 5": 2 },
+    { "hour": "10:00", "Level 1": 4, "Level 2": 15, "Level 3": 10, "Level 4": 5, "Level 5": 1 },
+    { "hour": "11:00", "Level 1": 6, "Level 2": 12, "Level 3": 9, "Level 4": 8, "Level 5": 3 },
+    { "hour": "12:00", "Level 1": 3, "Level 2": 10, "Level 3": 14, "Level 4": 6, "Level 5": 5 },
+    { "hour": "13:00", "Level 1": 5, "Level 2": 7, "Level 3": 11, "Level 4": 10, "Level 5": 2 },
+    { "hour": "14:00", "Level 1": 2, "Level 2": 4, "Level 3": 8, "Level 4": 5, "Level 5": 1 }
+  ],
+  "acuity_benchmarks": [
+    { "name": "Level 1 (Resuscitation)", "avg": "45m", "diff": "-140m", "type": "good", "color": "#2563eb"},
+    { "name": "Level 2 (Emergent)", "avg": "210m", "diff": "+25m", "type": "warning", "color": "#ef4444" },
+    { "name": "Level 3 (Urgent)", "avg": "195m", "diff": "+10m", "type": "warning", "color": "#f59e0b" },
+    { "name": "Level 4 (Less Urgent)", "avg": "115m", "diff": "-70m", "type": "good", "color": "#10b981" },
+    { "name": "Level 5 (Non-Urgent)", "avg": "90m", "diff": "-95m", "type": "good", "color": "#94a3b8" }
+  ],
+  "trend_chart": [
+    { 
+      "period_start": "Feb 04", 
+      "total_stay_p90": 200, "total_stay_p75": 170, "total_stay_p50": 130,
+      "entry_to_triage_p90": 40, "entry_to_triage_p75": 30, "entry_to_triage_p50": 18,
+      "triage_to_vital_p90": 44, "triage_to_vital_p75": 32, "triage_to_vital_p50": 20,
+      "vital_to_medrecon_p90": 130, "vital_to_medrecon_p75": 105, "vital_to_medrecon_p50": 80,
+      "medrecon_to_dispense_p90": 30, "medrecon_to_dispense_p75": 22, "medrecon_to_dispense_p50": 14,
+      "dispense_to_exit_p90": 52, "dispense_to_exit_p75": 40, "dispense_to_exit_p50": 26
+    },
+    { 
+      "period_start": "Feb 05", 
+      "total_stay_p90": 210, "total_stay_p75": 180, "total_stay_p50": 140,
+      "entry_to_triage_p90": 42, "entry_to_triage_p75": 32, "entry_to_triage_p50": 20,
+      "triage_to_vital_p90": 45, "triage_to_vital_p75": 35, "triage_to_vital_p50": 22,
+      "vital_to_medrecon_p90": 130, "vital_to_medrecon_p75": 110, "vital_to_medrecon_p50": 85,
+      "medrecon_to_dispense_p90": 30, "medrecon_to_dispense_p75": 22, "medrecon_to_dispense_p50": 14,
+      "dispense_to_exit_p90": 55, "dispense_to_exit_p75": 42, "dispense_to_exit_p50": 28
+    },
+    { 
+      "period_start": "Feb 06", 
+      "total_stay_p90": 235, "total_stay_p75": 195, "total_stay_p50": 155,
+      "entry_to_triage_p90": 45, "entry_to_triage_p75": 35, "entry_to_triage_p50": 22,
+      "triage_to_vital_p90": 58, "triage_to_vital_p75": 42, "triage_to_vital_p50": 25,
+      "vital_to_medrecon_p90": 145, "vital_to_medrecon_p75": 120, "vital_to_medrecon_p50": 90,
+      "medrecon_to_dispense_p90": 32, "medrecon_to_dispense_p75": 24, "medrecon_to_dispense_p50": 16,
+      "dispense_to_exit_p90": 58, "dispense_to_exit_p75": 45, "dispense_to_exit_p50": 30
+    },
+    { 
+      "period_start": "Feb 07", 
+      "total_stay_p90": 260, "total_stay_p75": 215, "total_stay_p50": 170,
+      "entry_to_triage_p90": 48, "entry_to_triage_p75": 38, "entry_to_triage_p50": 25,
+      "triage_to_vital_p90": 65, "triage_to_vital_p75": 48, "triage_to_vital_p50": 28,
+      "vital_to_medrecon_p90": 170, "vital_to_medrecon_p75": 140, "vital_to_medrecon_p50": 105,
+      "medrecon_to_dispense_p90": 35, "medrecon_to_dispense_p75": 26, "medrecon_to_dispense_p50": 18,
+      "dispense_to_exit_p90": 65, "dispense_to_exit_p75": 50, "dispense_to_exit_p50": 35
+    },
+    { 
+      "period_start": "Feb 08", 
+      "total_stay_p90": 250, "total_stay_p75": 200, "total_stay_p50": 150,
+      "entry_to_triage_p90": 46, "entry_to_triage_p75": 38, "entry_to_triage_p50": 26,
+      "triage_to_vital_p90": 46, "triage_to_vital_p75": 38, "triage_to_vital_p50": 26, 
+      "vital_to_medrecon_p90": 145, "vital_to_medrecon_p75": 125, "vital_to_medrecon_p50": 95,
+      "medrecon_to_dispense_p90": 30, "medrecon_to_dispense_p75": 22, "medrecon_to_dispense_p50": 14,
+      "dispense_to_exit_p90": 55, "dispense_to_exit_p75": 40, "dispense_to_exit_p50": 30
+    },
+    { 
+      "period_start": "Feb 09", 
+      "total_stay_p90": 180, "total_stay_p75": 145, "total_stay_p50": 100,
+      "entry_to_triage_p90": 35, "entry_to_triage_p75": 25, "entry_to_triage_p50": 15,
+      "triage_to_vital_p90": 40, "triage_to_vital_p75": 28, "triage_to_vital_p50": 15, 
+      "vital_to_medrecon_p90": 145, "vital_to_medrecon_p75": 105, "vital_to_medrecon_p50": 84,
+      "medrecon_to_dispense_p90": 25, "medrecon_to_dispense_p75": 20, "medrecon_to_dispense_p50": 12,
+      "dispense_to_exit_p90": 45, "dispense_to_exit_p75": 35, "dispense_to_exit_p50": 25
+    },
+    { 
+      "period_start": "Feb 10", 
+      "total_stay_p90": 190, "total_stay_p75": 155, "total_stay_p50": 110,
+      "entry_to_triage_p90": 38, "entry_to_triage_p75": 28, "entry_to_triage_p50": 18,
+      "triage_to_vital_p90": 42, "triage_to_vital_p75": 30, "triage_to_vital_p50": 18, 
+      "vital_to_medrecon_p90": 135, "vital_to_medrecon_p75": 100, "vital_to_medrecon_p50": 80,
+      "medrecon_to_dispense_p90": 28, "medrecon_to_dispense_p75": 21, "medrecon_to_dispense_p50": 14,
+      "dispense_to_exit_p90": 50, "dispense_to_exit_p75": 38, "dispense_to_exit_p50": 28
+    }
+  ]
+}
