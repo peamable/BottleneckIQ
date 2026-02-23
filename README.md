@@ -24,7 +24,7 @@ Team
 Before running the project, make sure you have:
 
 1. Node.js (includes npm) → https://nodejs.org
-2. Python 3.10+ 
+2. Python 3.10+ → https://www.python.org/downloads/
 3. pip
 4. Download and Install docker desktop and create an account  → https://www.docker.com/products/docker-desktop/
 
