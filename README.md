@@ -35,8 +35,10 @@ Before running the project, make sure you have:
     .venv\Scripts\activate
 ## Fix the "Scripts Disable" error in PowerShell(if you need to)
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
-3. pip install -r requirements.txt
-4. docker compose up -d
+## Run the remaining commands
+    pip install -r requirements.txt
+## 
+    docker compose up -d
 5. uvicorn app.main:app --reload
 
 
