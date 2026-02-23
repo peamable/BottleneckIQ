@@ -39,7 +39,8 @@ Before running the project, make sure you have:
     pip install -r requirements.txt
 ## 
     docker compose up -d
-5. uvicorn app.main:app --reload
+##
+    uvicorn app.main:app --reload
 
 
 
