@@ -31,9 +31,9 @@ Before running the project, make sure you have:
 # 2. Create venv
 ## 2.1. Create a virtual environment named ".venv"
     python -m venv .venv
-# 2.2. Activate the virtual environment
+## 2.2. Activate the virtual environment
     .venv\Scripts\activate
-# 2.3. Fix the "Scripts Disable" error in PowerShell
+## 2.3. Fix the "Scripts Disable" error in PowerShell
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 3. pip install -r requirements.txt
 4. docker compose up -d
