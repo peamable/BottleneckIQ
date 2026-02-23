@@ -41,7 +41,9 @@ Before running the project, make sure you have:
 ## Docker 
     docker compose up -d
 ## 
-open the mySQL portal from docker and login using the following
+<img width="1228" height="167" alt="image" src="https://github.com/user-attachments/assets/f76fcdd8-5204-4bf5-8092-37eed05c262c" />
+
+open the mySQL(adminer) portal from docker and login using the following
 
 <img width="987" height="428" alt="image" src="https://github.com/user-attachments/assets/fd4c7bd3-dae0-4e4f-9399-abe00a41d1ec" />
 password = ed_app_pw
