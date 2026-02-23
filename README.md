@@ -50,6 +50,7 @@ Before running the project, make sure you have:
 ## navigate to frontend folder
 ### run the following commands
 - npm install
+- npm install axios
 ### Chart libraries
 - npm install recharts
 - npm install react-plotly.js plotly.js
