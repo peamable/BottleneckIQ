@@ -23,17 +23,17 @@ Team
 
 Before running the project, make sure you have:
 
-- Node.js (includes npm) → https://nodejs.org
-- Python 3.10+ 
-- pip
+1. Node.js (includes npm) → https://nodejs.org
+2. Python 3.10+ 
+3. pip
 
 # Backend setup
-# 2. Create venv
-## 2.1. Create a virtual environment named ".venv"
+# Create venv
+## Create a virtual environment named ".venv"
     python -m venv .venv
-## 2.2. Activate the virtual environment
+## Activate the virtual environment
     .venv\Scripts\activate
-## 2.3. Fix the "Scripts Disable" error in PowerShell
+## Fix the "Scripts Disable" error in PowerShell(if you need to)
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 3. pip install -r requirements.txt
 4. docker compose up -d
