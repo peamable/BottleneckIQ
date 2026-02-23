@@ -38,9 +38,14 @@ Before running the project, make sure you have:
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 ## Run the remaining commands
     pip install -r requirements.txt
-## 
+## Docker 
     docker compose up -d
-##
+## 
+open the mySQL portal from docker and login using the following
+
+<img width="987" height="428" alt="image" src="https://github.com/user-attachments/assets/fd4c7bd3-dae0-4e4f-9399-abe00a41d1ec" />
+password = ed_app_pw
+
     uvicorn app.main:app --reload
 
 
