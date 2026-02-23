@@ -53,7 +53,7 @@ open the mySQL(adminer) portal from docker and login using the following
 - find the schema.sql in "\GitHub\W26_4495_S2_PhoebeA\Implementation\init-db\schema.sql"
 - Execute the file
 
-
+## 
     uvicorn app.main:app --reload
 
 
