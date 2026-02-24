@@ -39,11 +39,10 @@
 },
 "equity_audit": [
     { "group": "BLACK/AFRICAN AMERICAN", "variance": 14 },
-    { "group": "HISPANIC/LATINO - SALVADORAN", "variance": 18 },
+    { "group": "HISPANIC/LATINO - SALVADORAN", "variance": -2 },
     { "group": "WHITE - BRAZILIAN", "variance": 8 },
-    { "group": "AGE 65+", "variance": 22 },
-    { "group": "PORTUGUESE", "variance": 4 },
-    { "group": "WHITE - OTHER EUROPEAN", "variance": -2 }
+    { "group": "PORTUGUESE", "variance": -4 },
+    { "group": "WHITE - OTHER EUROPEAN", "variance":10 }
   ],
   "efficiency_stress_test": [
     { "volume": 12, "p90_wait": 35 }, 
