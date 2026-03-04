@@ -5,7 +5,7 @@ from app.core.database import engine
 from app.services.staging_tables import ensure_staging_tables, reset_staging_batch
 from app.services.data_validation import validate_batch
 
-def load_to_staging(df_ed_stay: pd.DataFrame, df_acuity: pd.DataFrame, batch_id: str):
+def load_to_staging(df_ed_stay: pd.DataFrame, df_stay_info: pd.DataFrame, batch_id: str):
     ensure_staging_tables()
     reset_staging_batch(batch_id)
 
@@ -25,14 +25,14 @@ def load_to_staging(df_ed_stay: pd.DataFrame, df_acuity: pd.DataFrame, batch_id:
         method="multi",
     )
 
-    if df_acuity is not None and len(df_acuity) > 0:
-        df2 = df_acuity.copy()
+    if df_stay_info is not None and len(df_stay_info) > 0:
+        df2 = df_stay_info.copy()
         df2["batch_id"] = batch_id
         df2["ingested_at"] = now
         df2 = df2.where(pd.notnull(df2), None)
 
         df2.to_sql(
-            "acuity_staging",
+            "stay_info_staging",
             con=engine,
             if_exists="append",
             index=False,
@@ -57,27 +57,31 @@ def insert_final_from_staging(batch_id: str):
               AND TRIM(activity) <> ''
         """), {"b": batch_id})
 
-        # acuity: upsert by stay_id
+        # stay_info: upsert by stay_id
         res2 = conn.execute(text("""
-            INSERT INTO acuity (stay_id, scale_level)
-            SELECT stay_id, scale_level
-            FROM acuity_staging
+            INSERT INTO stay_info (stay_id, gender, race, arrival_transport, scale_level, chiefcomplaint)
+            SELECT stay_id, gender, race, arrival_transport, scale_level, chiefcomplaint
+            FROM stay_info_staging
             WHERE batch_id=:b
               AND stay_id IS NOT NULL
+              AND gender IS NOT NULL
+              AND race IS NOT NULL
+              AND arrival_transport IS NOT NULL
               AND scale_level IS NOT NULL
+              AND chiefcomplaint IS NOT NULL
             ON DUPLICATE KEY UPDATE
               scale_level = VALUES(scale_level)
         """), {"b": batch_id})
 
-        return {"ed_stay_inserted": res1.rowcount, "acuity_affected": res2.rowcount}
+        return {"ed_stay_inserted": res1.rowcount, "stay_info_affected": res2.rowcount}
 
-def cleanup_staging(batch_id: str):
-    with engine.begin() as conn:
-        conn.execute(text("DELETE FROM ed_stay_staging WHERE batch_id=:b"), {"b": batch_id})
-        conn.execute(text("DELETE FROM acuity_staging WHERE batch_id=:b"), {"b": batch_id})
+#def cleanup_staging(batch_id: str):
+#    with engine.begin() as conn:
+#        conn.execute(text("DELETE FROM ed_stay_staging WHERE batch_id=:b"), {"b": batch_id})
+#        conn.execute(text("DELETE FROM stay_info_staging WHERE batch_id=:b"), {"b": batch_id})
 
-def process_batch(df_ed_stay: pd.DataFrame, df_acuity: pd.DataFrame, batch_id: str, cleanup: bool = True):
-    load_to_staging(df_ed_stay, df_acuity, batch_id)
+def process_batch(df_ed_stay: pd.DataFrame, df_stay_info: pd.DataFrame, batch_id: str, cleanup: bool = True):
+    load_to_staging(df_ed_stay, df_stay_info, batch_id)
 
     errors = validate_batch(batch_id)
     if errors:
@@ -88,7 +92,7 @@ def process_batch(df_ed_stay: pd.DataFrame, df_acuity: pd.DataFrame, batch_id: s
     except Exception as e:
         return {"ok": False, "errors": [f"Final insert failed: {str(e)}"], "batch_id": batch_id}
 
-    if cleanup:
-        cleanup_staging(batch_id)
+#    if cleanup:
+#        cleanup_staging(batch_id)
 
     return {"ok": True, "errors": [], "batch_id": batch_id, **stats}
