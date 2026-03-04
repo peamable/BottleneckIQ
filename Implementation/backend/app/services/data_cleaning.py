@@ -104,3 +104,5 @@ def clean_to_ed_stay_and_stay_info(df_raw: pd.DataFrame):
     
             
     return df_ed_stay, df_stay_info
+
+ ### Should we have a column to show the occurance of each stage during a stay???
