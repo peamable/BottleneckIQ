@@ -103,4 +103,11 @@ def clean_to_ed_stay_and_stay_info(df_raw: pd.DataFrame):
     
     
             
+<<<<<<< Updated upstream
     return df_ed_stay, df_stay_info
+=======
+    return df_ed_stay, df_acuity
+
+
+    ### Should we have a column to show the occurance of each stage during a stay???
+>>>>>>> Stashed changes
