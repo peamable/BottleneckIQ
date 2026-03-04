@@ -5,61 +5,6 @@ from app.core.database import engine
 # calculate duration from Entry to each stage 
 # insert into event_log table
 
-<<<<<<< Updated upstream
-cal_duration_event_log = """
-INSERT INTO event_log (
-    stay_id,
-    time_to_triage,
-    time_to_vital,
-    time_to_medrecon,
-    time_to_dispen,
-    time_to_discharge,
-    total_ed_stay,
-    skipped_stages
-)
-SELECT
-    stay_id,
-    -- calculate from Entry to each stage 
-    -- to work in case of skipping termediate stages
-    TIMESTAMPDIFF(MINUTE, t_entry, t_triage) as time_to_triage,
-    TIMESTAMPDIFF(MINUTE, t_triage, t_vital) as time_to_vital,
-    TIMESTAMPDIFF(MINUTE, t_vital, t_medrecon) as time_to_medrecon,
-    TIMESTAMPDIFF(MINUTE, t_medrecon, t_dispen) as time_to_dispen,
-    TIMESTAMPDIFF(MINUTE, t_dispen, t_discharge) as time_to_discharge,
-    TIMESTAMPDIFF(MINUTE, t_entry, t_discharge) as total_ed_stay,
-    
-    -- track to find which stages are skipped
-    CONCAT(
-        CASE WHEN t_triage IS NULL THEN 'Triage, ' ELSE '' END,
-        CASE WHEN t_vital IS NULL THEN 'Vital, ' ELSE '' END,
-        CASE WHEN t_medrecon IS NULL THEN 'Medrecon, ' ELSE '' END,
-        CASE WHEN t_dispen IS NULL THEN 'Dispen, ' ELSE '' END
-    ) AS skipped_stages
-FROM (
-    SELECT
-        stay_id,
-        MIN(CASE WHEN LOWER(TRIM(activity))='entry'     THEN ed_timestamp END) AS t_entry,
-        MIN(CASE WHEN LOWER(TRIM(activity))='triage'    THEN ed_timestamp END) AS t_triage,
-        MIN(CASE WHEN LOWER(TRIM(activity))='vital'     THEN ed_timestamp END) AS t_vital,
-        MIN(CASE WHEN LOWER(TRIM(activity))='medrecon'  THEN ed_timestamp END) AS t_medrecon,
-        MIN(CASE WHEN LOWER(TRIM(activity))='dispen'    THEN ed_timestamp END) AS t_dispen,
-        MIN(CASE WHEN LOWER(TRIM(activity))='discharge' THEN ed_timestamp END) AS t_discharge
-    FROM ed_stay
-    GROUP BY stay_id
-) x
-WHERE t_entry IS NOT NULL
-ON DUPLICATE KEY UPDATE
-    time_to_triage = VALUES(time_to_triage),
-    time_to_vital = VALUES(time_to_vital),
-    time_to_medrecon = VALUES(time_to_medrecon),
-    time_to_dispen = VALUES(time_to_dispen),
-    time_to_discharge = VALUES(time_to_discharge),
-    total_ed_stay = VALUES(total_ed_stay),
-    skipped_stages = VALUES(skipped_stages);
-"""
-
-=======
->>>>>>> Stashed changes
 def insert_duration_event() -> int:
     # Fetch all data sorted by stay_id and timestamp
     query = "SELECT stay_id, activity, ed_timestamp FROM ed_stay ORDER BY stay_id, ed_timestamp"
