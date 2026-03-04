@@ -4,7 +4,7 @@ import pandas as pd
 import os  
 import shutil
 from app.config import settings 
-from app.services.data_cleaning import clean_to_ed_stay_and_acuity
+from app.services.data_cleaning import clean_to_ed_stay_and_stay_info
 from app.services.data_ingestion import process_batch
 from app.services.aggregation import insert_duration_event
 
@@ -37,11 +37,11 @@ async def upload(file: UploadFile = File(...)):
 
     # 3. do  raw data cleaning and ingestion the cleaned data in the tables
     try:
-        df_ed_stay, df_acuity = clean_to_ed_stay_and_acuity(df_raw)
+        df_ed_stay, df_stay_info = clean_to_ed_stay_and_stay_info(df_raw)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    result = process_batch(df_ed_stay, df_acuity, batch_id=batch_id, cleanup=True)
+    result = process_batch(df_ed_stay, df_stay_info, batch_id=batch_id, cleanup=True)
 
     if not result["ok"]:
         raise HTTPException(status_code=400, detail={"batch_id": batch_id, "errors": result["errors"]})
@@ -57,6 +57,6 @@ async def upload(file: UploadFile = File(...)):
         "batch_id": batch_id,
         "saved_path": file_path, 
         "rows_ed_stay": int(len(df_ed_stay)),
-        "rows_acuity": int(len(df_acuity)) if df_acuity is not None else 0,
+        "rows_stay_info": int(len(df_stay_info)) if df_stay_info is not None else 0,
         "event_log_rows_affected": int(affected),
     }

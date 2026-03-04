@@ -34,13 +34,13 @@ def validate_batch(batch_id: str) -> list[str]:
         
         # check scale_level column of acuity within integer range 1 to 5 
         bad_acuity = conn.execute(text("""
-            SELECT COUNT(*) FROM acuity_staging
+            SELECT COUNT(*) FROM stay_info_staging
             WHERE batch_id=:b
-              AND scale_level IS NOT NULL
+              AND (gender IS NOT NULL OR race IS NOT NULL OR arrival_transport IS NOT NULL OR scale_level IS NOT NULL OR chiefcomplaint IS NOT NULL)
               AND (scale_level < 1 OR scale_level > 5 OR scale_level <> FLOOR(scale_level))
         """), {"b": batch_id}).scalar()
 
         if bad_acuity and bad_acuity > 0:
-            errors.append(f"acuity_staging has {bad_acuity} rows with invalid scale_level (expect integer 1–5).")
+            errors.append(f"stay_info_staging has {bad_acuity} rows with invalid scale_level (expect integer 1–5).")
 
     return errors

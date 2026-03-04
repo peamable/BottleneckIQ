@@ -7,22 +7,24 @@ from app.core.database import engine
 cal_duration_event_log = """
 INSERT INTO event_log (
     stay_id,
-    entry_to_triage,
-    entry_to_vital,
-    entry_to_medrecon,
-    entry_to_dispen,
-    entry_to_discharge,
+    time_to_triage,
+    time_to_vital,
+    time_to_medrecon,
+    time_to_dispen,
+    time_to_discharge,
+    total_ed_stay,
     skipped_stages
 )
 SELECT
     stay_id,
     -- calculate from Entry to each stage 
     -- to work in case of skipping termediate stages
-    TIMESTAMPDIFF(MINUTE, t_entry, t_triage) as entry_to_triage,
-    TIMESTAMPDIFF(MINUTE, t_entry, t_vital) as entry_to_vital,
-    TIMESTAMPDIFF(MINUTE, t_entry, t_medrecon) as entry_to_medrecon,
-    TIMESTAMPDIFF(MINUTE, t_entry, t_dispen) as entry_to_dispen,
-    TIMESTAMPDIFF(MINUTE, t_entry, t_discharge) as entry_to_discharge,
+    TIMESTAMPDIFF(MINUTE, t_entry, t_triage) as time_to_triage,
+    TIMESTAMPDIFF(MINUTE, t_triage, t_vital) as time_to_vital,
+    TIMESTAMPDIFF(MINUTE, t_vital, t_medrecon) as time_to_medrecon,
+    TIMESTAMPDIFF(MINUTE, t_medrecon, t_dispen) as time_to_dispen,
+    TIMESTAMPDIFF(MINUTE, t_dispen, t_discharge) as time_to_discharge,
+    TIMESTAMPDIFF(MINUTE, t_entry, t_discharge) as total_ed_stay,
     
     -- track to find which stages are skipped
     CONCAT(
@@ -45,11 +47,12 @@ FROM (
 ) x
 WHERE t_entry IS NOT NULL
 ON DUPLICATE KEY UPDATE
-    entry_to_triage = VALUES(entry_to_triage),
-    entry_to_vital = VALUES(entry_to_vital),
-    entry_to_medrecon = VALUES(entry_to_medrecon),
-    entry_to_dispen = VALUES(entry_to_dispen),
-    entry_to_discharge = VALUES(entry_to_discharge),
+    time_to_triage = VALUES(time_to_triage),
+    time_to_vital = VALUES(time_to_vital),
+    time_to_medrecon = VALUES(time_to_medrecon),
+    time_to_dispen = VALUES(time_to_dispen),
+    time_to_discharge = VALUES(time_to_discharge),
+    total_ed_stay = VALUES(total_ed_stay),
     skipped_stages = VALUES(skipped_stages);
 """
 
