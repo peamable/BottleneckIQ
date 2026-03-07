@@ -7,6 +7,7 @@ from app.config import settings
 from app.services.data_cleaning import clean_to_ed_stay_and_stay_info
 from app.services.data_ingestion import process_batch
 from app.services.aggregation import insert_duration_event
+from app.services.analytics import calculate_and_store_metrics # New Import
 
 router = APIRouter()
 
@@ -52,11 +53,21 @@ async def upload(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail={"batch_id": batch_id, "errors": [f"Aggregation failed: {e}"]})
 
+  
+    # 5. NEW: Generate dashboard metrics
+    try:
+        metrics_result = calculate_and_store_metrics()
+    except Exception as e:
+        # We don't necessarily want to crash the whole upload if metrics fail,
+        # but for now, let's log it.
+        metrics_result = f"Metrics failed: {e}"
+
     return {
         "status": "success",
         "batch_id": batch_id,
         "saved_path": file_path, 
         "rows_ed_stay": int(len(df_ed_stay)),
-        "rows_stay_info": int(len(df_stay_info)) if df_stay_info is not None else 0,
+         "rows_stay_info": int(len(df_stay_info)) if df_stay_info is not None else 0,
         "event_log_rows_affected": int(affected),
+        "metrics_status": metrics_result # Let the user know metrics were saved!
     }
