@@ -5,8 +5,8 @@ import MainPage from './pages/main_page.jsx';
 import UploadPage from './pages/upload_page.jsx';
 import Header from './components/header.jsx';
 import Footer from './components/footer.jsx';
-import BottleneckBanner from './components/bottleneck_banner.jsx';
-import ViewMetrics from './pages/view_metrics_page.jsx'
+import ViewMetrics from './pages/view_metrics_page.jsx';
+import Insights from './pages/insights_page.jsx'
 
 
 
@@ -17,11 +17,12 @@ function App() {
       
       <div className='App'>
          <Header/>
-         <BottleneckBanner/>
+         {/* <BottleneckBanner/> */}
          <div className="page-content">
         <Routes>
           <Route path='/' element= {<MainPage/>}></Route>
           <Route path='/upload' element= {<UploadPage/>}></Route>
+          <Route path='/insights' element= {<Insights/>}></Route>
           <Route path='/view_metrics' element= {<ViewMetrics/>}></Route>  {/*change to viewMetrics when you set it up */}
         </Routes>
       

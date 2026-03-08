@@ -11,6 +11,7 @@ from app.services.data_ingestion import process_batch
 from app.services.aggregation import insert_duration_event
 from app.services.analytics import calculate_and_store_metrics
 from app.services.upload_history import create_upload_history, update_upload_status # New Import 
+from app.services.analytics import calculate_and_store_metrics # New Import
 
 # use  logger for the upload history 
 logger = logging.getLogger(__name__)

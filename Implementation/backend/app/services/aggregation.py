@@ -1,3 +1,4 @@
+import pandas as pd
 from sqlalchemy import text
 from app.core.database import engine
 
@@ -95,6 +96,7 @@ def insert_duration_event() -> int:
     """)
 
     with engine.begin() as conn:
-        result = conn.execute(text(cal_duration_event_log))
-        return result.rowcount
+        conn.execute(upsert_sql, results)
+        
+    return len(results)
     

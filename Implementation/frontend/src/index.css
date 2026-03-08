@@ -66,3 +66,286 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.metrics_grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  margin-top: 2rem;
+}
+
+.metric_card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 1.5rem;
+  position: relative;
+}
+
+.bottleneck_border {
+  border: 1px solid #f59e0b;
+}
+
+.card_header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.card_title {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.card_title_mini, .stat_label_mini {
+  color: #4338CA; /* Indigo for labels */
+}
+
+.bottleneck_tag {
+  background: #78350f;
+  color: #fbbf24;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.stat_value {
+  display: block;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.stat_value.highlight {
+  color: #10b981; /* Green highlight from your image */
+}
+
+.stat_label {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.main_chart_container {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-top: 2rem;
+  width: 100%;
+}
+
+/* This class targets ONLY the viewMetrics page */
+.view_metrics_page_wrapper {
+  /* Spans the full screen */
+  min-height: 100vh;
+  width: 100%;
+  
+  /* Your specific background color or gradient */
+  background-color: #cccceb !important; /* Example: Deep Navy/Slate from your dashboard */
+  
+  /* If you want a subtle gradient like in your reference image */
+  /* background: radial-gradient(circle at top left, #1e293b, #0f172a); */
+
+  /* Resets any default margins that might cause white gaps */
+  margin: 0;
+  padding: 0;
+  
+  /* Ensures the content inside is still centered */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+
+.acuity_card_container {
+  background: #1e293b; /* Or your new lighter background */
+  border-radius: 12px;
+  padding: 1.5rem;
+  color: #f8fafc;
+}
+
+.acuity_header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.acuity_table_labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #64748b;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #334155;
+  margin-bottom: 0.5rem;
+}
+
+.label_group {
+  display: flex;
+  gap: 3rem; /* Adjust to align with the columns below */
+}
+
+.acuity_row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid #1e293b; /* Subtle separation */
+}
+
+.acuity_name {
+  font-size: 0.95rem;
+  color: #4338CA;
+}
+
+.acuity_stats_group {
+  display: flex;
+  align-items: center;
+  gap: 4.5rem; /* Matches label_group gap */
+}
+
+.stat_avg {
+  font-weight: 600;
+  width: 30px;
+  text-align: right;
+}
+
+.stat_patient_badge {
+  background: rgba(16, 185, 129, 0.1); /* Subtle green tint */
+  color: #10b981; /* Matching the green in your image */
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  min-width: 25px;
+  text-align: center;
+}
+
+.metrics_grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 cards per row to show flow */
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.data_visual_row {
+  display: flex;
+  flex-wrap: wrap; /* Allows them to stack if the screen is too small */
+  gap: 2rem;
+  margin-top: 2rem;
+  width: 100%;
+}
+
+.visual_container {
+  background: #F1F5F9;
+  border: 1px solid #B2B2FF;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.half { flex: 1; }
+
+.visual_header {
+  color: #1E293B;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Compact Card Styles */
+.metric_card_mini {
+  background: #F1F5F9;
+  border: 1px solid #B2B2FF;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(204, 204, 255, 0.4); /* Glow matching background */
+  padding: 1.25rem;
+}
+
+.card_body_mini {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 10px;
+}
+
+.stat_value_large { font-size: 1.8rem; font-weight: 700; color: #0F172A; }
+.stat_unit { color: #64748b; margin-left: 4px; font-size: 0.8rem; }
+.stat_label_mini { color: #64748b; font-size: 0.75rem; margin-top: -5px; }
+
+.percentile_dropdown {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.highlight_green { color: #10b981; font-weight: 600; }
+
+/* --- Dashboard Control Bar Styles --- */
+.dashboard_controls_bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1e293b; /* Matches your navy/slate theme */
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.control_group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.control_group label {
+  color: #94a3b8; /* Muted slate for the label */
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.global_percentile_dropdown {
+  background: #0f172a; /* Slightly darker than the bar for depth */
+  color: #f8fafc;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.global_percentile_dropdown:focus {
+  border-color: #3b82f6; /* Subtle blue glow when active */
+}
+
+.last_updated {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Optional: Add a green dot for the "Live Analysis" status */
+.last_updated::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: #10b981;
+  border-radius: 50%;
+}
