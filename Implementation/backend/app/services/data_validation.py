@@ -31,16 +31,24 @@ def validate_batch(batch_id: str) -> list[str]:
         if repeated_rows and repeated_rows > 0:
             errors.append(f"ed_stay_staging has {repeated_rows} duplicate event keys (stay_id, ed_timestamp, activity).")
 
-        
-        # check scale_level column of acuity within integer range 1 to 5 
-        bad_acuity = conn.execute(text("""
+        # check null for gender, race, arrival_transport, disposition and chiefcomplaint in stay_info_staging
+        bad_stay_info_nulls = conn.execute(text("""
             SELECT COUNT(*) FROM stay_info_staging
-            WHERE batch_id=:b
-              AND (gender IS NOT NULL OR race IS NOT NULL OR arrival_transport IS NOT NULL OR scale_level IS NOT NULL OR chiefcomplaint IS NOT NULL)
-              AND (scale_level < 1 OR scale_level > 5 OR scale_level <> FLOOR(scale_level))
+            WHERE batch_id=:b AND (gender IS NULL OR race IS NULL OR arrival_transport IS NULL OR disposition IS NULL OR chiefcomplaint IS NULL)
         """), {"b": batch_id}).scalar()
 
-        if bad_acuity and bad_acuity > 0:
-            errors.append(f"stay_info_staging has {bad_acuity} rows with invalid scale_level (expect integer 1–5).")
+        if bad_stay_info_nulls and bad_stay_info_nulls > 0:
+            errors.append(f"stay_info_staging has {bad_stay_info_nulls} rows with NULL values for gender, race, arrival_transport, disposition, or chiefcomplaint.")
+
+        # check scale_level column of stay_info within integer range 1 to 5 
+       
+        bad_scale_level = conn.execute(text("""
+            SELECT COUNT(*) FROM stay_info_staging
+            WHERE batch_id=:b
+              AND (gender IS NULL OR scale_level < 1 OR scale_level > 5 OR scale_level <> FLOOR(scale_level))
+        """), {"b": batch_id}).scalar()
+
+        if bad_scale_level and bad_scale_level > 0:
+            errors.append(f"stay_info_staging has {bad_scale_level} rows with invalid scale_level (expect integer 1–5).")
 
     return errors

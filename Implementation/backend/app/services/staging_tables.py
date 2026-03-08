@@ -9,7 +9,10 @@ CREATE TABLE IF NOT EXISTS ed_stay_staging (
   ed_timestamp DATETIME NULL,
   activity VARCHAR(255) NULL,
   batch_id VARCHAR(50) NULL,
-  ingested_at DATETIME NULL
+  upload_id BIGINT NULL,
+  ingested_at DATETIME NULL,
+  INDEX idx_upload_id (upload_id),
+  CONSTRAINT fk_ed_stay_upload FOREIGN KEY (upload_id) REFERENCES upload_history(upload_id) ON DELETE CASCADE
 );
 """
 
@@ -19,10 +22,14 @@ CREATE TABLE IF NOT EXISTS stay_info_staging (
   gender VARCHAR(10) NULL,
   race VARCHAR(255) NULL,
   arrival_transport VARCHAR(255) NULL,
+  disposition VARCHAR(255) NULL,
   scale_level DOUBLE NULL,
   chiefcomplaint VARCHAR(255) NULL,
   batch_id VARCHAR(50) NULL,
-  ingested_at DATETIME NULL
+  upload_id BIGINT NULL,
+  ingested_at DATETIME NULL,
+  INDEX idx_upload_id (upload_id),
+  CONSTRAINT fk_stay_info_upload FOREIGN KEY (upload_id) REFERENCES upload_history(upload_id) ON DELETE CASCADE
 );
 """
 
