@@ -5,7 +5,8 @@
   
   /* 1. THE TRANSPARENT YELLOW BACKGROUND */
   /* rgba(245, 158, 11, 0.15) = Amber color at 15% opacity */
-  background-color: rgba(245, 158, 11, 0.15); 
+  /* background-color: rgba(245, 158, 11, 0.15);  */
+  background-color:#E11D48;
   
   /* 2. THE BORDER */
   /* Using a slightly more solid version of the same color */

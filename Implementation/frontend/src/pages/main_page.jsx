@@ -29,7 +29,7 @@ const MainPage = () => {
         <div className="Landing-container">
             <header className="landing-header">
                 <h1>ED Bottleneck Detection System</h1>
-                <p>Track patient flow timelines and identidy operational bottlenecks</p>
+                <p>Track patient flow timelines and identify operational bottlenecks</p>
             </header>
 
             <div className="card-grid">

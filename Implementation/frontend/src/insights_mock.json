@@ -1,0 +1,60 @@
+ {"forecast_hub": {
+    "labels": ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"],
+    "actual_volume": [22, 25, 28, 35, 38, 42, 45, null, null, null, null, null],
+    "predicted_volume": [null, null, null, null, null, null, 45, 52, 58, 62, 55, 48],
+    "risk_cards": [
+      { "metric": "Staffing Risk", "probability": 85, "level": "Critical" },
+      { "metric": "Bed Shortage", "probability": 62, "level": "High" },
+      { "metric": "EMS Surge", "probability": 22, "level": "Low" }
+    ]
+  },
+  "heatmap_data": {
+    "y_days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "x_hours": ["12am", "3am", "6am", "9am", "12pm", "3pm", "6pm", "9pm"],
+    "z_matrix": [
+      [10, 15, 20, 45, 50, 55, 40, 20], 
+      [30, 40, 65, 85, 95, 90, 70, 40], 
+      [20, 25, 40, 60, 65, 55, 45, 30], 
+      [15, 20, 35, 55, 60, 50, 40, 25], 
+      [20, 25, 45, 65, 75, 70, 55, 35], 
+      [40, 50, 75, 90, 95, 85, 80, 60], 
+      [25, 30, 50, 70, 80, 75, 60, 40]
+    ]
+  },
+    "logistics_root_cause": {
+  "disposition_mix": [
+    { "type": "ADMITTED", "percentage": 28 },
+    { "type": "HOME", "percentage": 52 },
+    { "type": "NOT SEEN", "percentage": 8 },
+    { "type": "TRANSFER", "percentage": 5 },
+    { "type": "OTHER", "percentage": 7 }
+  ],
+   "top_complaints": [
+    { "complaint": "Abdominal Pain", "count": 45, "delay_impact": "+18m" },
+    { "complaint": "Shortness of Breath", "count": 32, "delay_impact": "+25m" },
+    { "complaint": "Chest Pain", "count": 28, "delay_impact": "+30m" },
+    { "complaint": "Back Pain", "count": 22, "delay_impact": "+5m" },
+    { "complaint": "ETOH/Mental Health", "count": 15, "delay_impact": "+40m" }
+  ]
+},
+"equity_audit": [
+    { "group": "BLACK/AFRICAN AMERICAN", "variance": 14 },
+    { "group": "HISPANIC/LATINO - SALVADORAN", "variance": -2 },
+    { "group": "WHITE - BRAZILIAN", "variance": 8 },
+    { "group": "PORTUGUESE", "variance": -4 },
+    { "group": "WHITE - OTHER EUROPEAN", "variance":10 }
+  ],
+  "efficiency_stress_test": [
+    { "volume": 12, "p90_wait": 35 }, 
+    { "volume": 18, "p90_wait": 42 },
+    { "volume": 25, "p90_wait": 50 }, 
+    { "volume": 32, "p90_wait": 65 },
+    { "volume": 38, "p90_wait": 85 }, 
+    { "volume": 42, "p90_wait": 110 },
+    { "volume": 45, "p90_wait": 185 }, 
+    { "volume": 48, "p90_wait": 210 },
+    { "volume": 55, "p90_wait": 240 }, 
+    { "volume": 62, "p90_wait": 275 }
+  ]
+
+ }
