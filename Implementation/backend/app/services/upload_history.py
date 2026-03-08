@@ -12,7 +12,7 @@ def create_upload_history(period_start: str, period_end: str):
         raise ValueError(f"Invalid date format: period_start='{period_start}', period_end='{period_end}'. Error: {e}")
     
     # Generate batch_id BEFORE inserting
-    batch_id = f"batch_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{str(uuid4())[:8]}"
+    batch_id = f"batch_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{str(uuid4())[:8]}"
     
     with engine.begin() as conn:
         res = conn.execute(text("""
@@ -20,7 +20,7 @@ def create_upload_history(period_start: str, period_end: str):
             VALUES (:bid, :ts, :ps, :pe, 'pending')
         """), {
             "bid": batch_id,
-            "ts": datetime.utcnow(),
+            "ts": datetime.now(),
             "ps": ps_dt,
             "pe": pe_dt
         })
