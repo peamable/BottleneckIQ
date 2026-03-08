@@ -28,7 +28,7 @@ def calculate_and_store_metrics():
     HARDCODED_UPLOAD_ID = 1 
 
     for col in df.columns:
-        if col.startswith('time_to') or col == 'total_ed_stay':
+        if col.startswith('time_to') or col == 'total_ed_stay_time':
             series = df[col].dropna()
             
             if not series.empty:

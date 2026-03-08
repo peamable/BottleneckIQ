@@ -11,7 +11,7 @@ def clean_to_ed_stay_and_stay_info(df_raw: pd.DataFrame):
     """
     Returns (df_ed_stay, df_stay_info)
     df_ed_stay columns: stay_id, ed_timestamp, activity 
-    df_stay_info columns: stay_id, gender, race, arrival_transport, chiefcomplaint, scale_level
+    df_stay_info columns: stay_id, gender, race, arrival_transport, disposition, chiefcomplaint, scale_level
     """
     # --- ed_stay table ---
     # select the required columns for ed_stay table
@@ -56,7 +56,7 @@ def clean_to_ed_stay_and_stay_info(df_raw: pd.DataFrame):
 
     # --- stay_info table  ---
     # change the acuity column name as scale_level and extract first digit
-    df_stay_info = df_raw[["stay_id",  "gender", "race", "arrival_transport", "chiefcomplaint", "acuity"]].copy()
+    df_stay_info = df_raw[["stay_id",  "gender", "race", "arrival_transport", "disposition", "chiefcomplaint", "acuity"]].copy()
     df_stay_info = df_stay_info.rename(columns={"acuity": "scale_level"})
     df_stay_info["stay_id"] = pd.to_numeric(df_stay_info["stay_id"], errors="coerce").astype("Int64")
     
@@ -66,7 +66,7 @@ def clean_to_ed_stay_and_stay_info(df_raw: pd.DataFrame):
     .str.extract(r"(\d)")[0]  
     )
     # create a list of categorical columns to change data type
-    cols_to_change = ["gender", "race", "arrival_transport", "chiefcomplaint"]
+    cols_to_change = ["gender", "race", "arrival_transport", "disposition", "chiefcomplaint"]
 
     for col in cols_to_change:
         # Normalize stay_info text fields for consistent ingestion.
@@ -92,13 +92,14 @@ def clean_to_ed_stay_and_stay_info(df_raw: pd.DataFrame):
                 "gender": first_non_null,
                 "race": first_non_null,
                 "arrival_transport": first_non_null,
+                "disposition": first_non_null,
                 "chiefcomplaint": first_non_null,
                 "scale_level": first_non_null,
             })
     )
     
     df_stay_info = df_stay_info.dropna(
-        subset=["stay_id", "gender", "race", "arrival_transport", "chiefcomplaint", "scale_level"]
+        subset=["stay_id", "gender", "race", "arrival_transport", "disposition", "chiefcomplaint", "scale_level"]
     )
     
     

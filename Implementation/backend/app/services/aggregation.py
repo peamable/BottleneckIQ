@@ -43,7 +43,7 @@ def insert_duration_event() -> int:
         metrics = {
             'stay_id': stay_id,
             'event_flow': event_flow,
-            'total_ed_stay': total_los, #total length of stay
+            'total_ed_stay_time': total_los, #total length of stay
             'time_to_triage': None, 'time_to_vital': None,
             'time_to_medrecon': None, 'time_to_dispen': None,
             'time_to_discharge': None, 'skipped_stages': []
@@ -79,10 +79,10 @@ def insert_duration_event() -> int:
     upsert_sql = text("""
         INSERT INTO event_log (
             stay_id, time_to_triage, time_to_vital, time_to_medrecon, 
-            time_to_dispen, time_to_discharge, skipped_stages, event_flow, total_ed_stay
+            time_to_dispen, time_to_discharge, skipped_stages, event_flow, total_ed_stay_time
         ) VALUES (
             :stay_id, :time_to_triage, :time_to_vital, :time_to_medrecon, 
-            :time_to_dispen, :time_to_discharge, :skipped_stages, :event_flow, :total_ed_stay
+            :time_to_dispen, :time_to_discharge, :skipped_stages, :event_flow, :total_ed_stay_time
         )
         ON DUPLICATE KEY UPDATE
             time_to_triage = VALUES(time_to_triage),
@@ -92,7 +92,7 @@ def insert_duration_event() -> int:
             time_to_discharge = VALUES(time_to_discharge),
             skipped_stages = VALUES(skipped_stages),
             event_flow = VALUES(event_flow),
-            total_ed_stay = VALUES(total_ed_stay)
+            total_ed_stay_time = VALUES(total_ed_stay_time)
     """)
 
     with engine.begin() as conn:
