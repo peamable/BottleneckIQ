@@ -15,7 +15,7 @@ def load_to_staging(
     ensure_staging_tables()
     reset_staging_batch(batch_id)
 
-    now = datetime.utcnow()
+    now = datetime.now()
 
     df1 = df_ed_stay.copy()
     df1["batch_id"] = batch_id

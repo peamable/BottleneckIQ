@@ -11,7 +11,6 @@ from app.services.data_ingestion import process_batch
 from app.services.aggregation import insert_duration_event
 from app.services.analytics import calculate_and_store_metrics
 from app.services.upload_history import create_upload_history, update_upload_status # New Import 
-from app.services.analytics import calculate_and_store_metrics # New Import
 
 # use  logger for the upload history 
 logger = logging.getLogger(__name__)
@@ -26,7 +25,7 @@ async def upload(file: UploadFile = File(...)):
     # to change after how to determine period, for now we will just use current month as default
     try:
         # Generate default period: current month start to end
-        now = datetime.utcnow()
+        now = datetime.now()
         period_start_dt = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         
         # Last day of current month
