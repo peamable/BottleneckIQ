@@ -11,6 +11,7 @@ const UploadPage = () => {
   //  these will track the popup
   const [is_processing, set_is_processing] = useState(false);
   const [is_finished, set_is_finished] = useState(false);
+  const [lastUploadId, setLastUploadId] = useState(null);
   
   const navigate = useNavigate(); // Initialize navigation
 
@@ -29,7 +30,8 @@ const UploadPage = () => {
     set_is_finished(false);
   };
 
-  const handleSuccess = () => {
+  const handleSuccess = (payload) => {
+    setLastUploadId(payload?.upload_id ?? null);
     set_is_finished(true);
   };
 
@@ -122,7 +124,7 @@ const UploadPage = () => {
                 <p>Metrics have been successfully calculated.</p>
                 <button 
                   className="btn_primary" 
-                  onClick={() => navigate('/view_metrics')}
+                  onClick={() => navigate('/view_metrics', { state: { upload_id: lastUploadId } })}
                 >
                   View Metrics Dashboard
                 </button>
