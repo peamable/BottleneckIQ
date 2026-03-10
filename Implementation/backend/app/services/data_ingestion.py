@@ -99,13 +99,11 @@ def process_batch(
         df_stay_info: pd.DataFrame,
         period_start: datetime,
         period_end: datetime, 
-        batch_id: str = None, 
+        batch_id: str,
+        upload_id: int,
         cleanup: bool = True
     ) -> dict:
-    # generate batch_id 
-    if batch_id is None:
-        batch_id = f"batch_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
-    load_to_staging(df_ed_stay, df_stay_info, batch_id, upload_id=None)
+    load_to_staging(df_ed_stay, df_stay_info, batch_id, upload_id=upload_id)
 
     errors = validate_batch(batch_id)
     if errors:

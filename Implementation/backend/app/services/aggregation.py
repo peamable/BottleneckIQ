@@ -5,7 +5,10 @@ from app.core.database import engine
 # calculate duration from Entry to each stage 
 # insert into event_log table
 
-def insert_duration_event() -> int:
+def insert_duration_event(upload_id: int | None = None) -> int:
+    # The `upload_id` parameter is included for traceability and future use,
+    # though the current aggregation logic operates globally on all data.
+
     # Fetch all data sorted by stay_id and timestamp
     query = "SELECT stay_id, activity, ed_timestamp FROM ed_stay ORDER BY stay_id, ed_timestamp"
     
