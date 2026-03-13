@@ -28,7 +28,7 @@ useEffect(() => {
         ...prev,
         logistics_root_cause: {
           ...prev.logistics_root_cause,
-          ...payload.logistics_root_cause,
+          disposition_mix: payload.logistics_root_cause.disposition_mix
         },
       }));
     } catch (err) {
