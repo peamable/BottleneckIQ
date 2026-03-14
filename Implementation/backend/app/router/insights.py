@@ -8,13 +8,10 @@ router = APIRouter(
 
 
 @router.get("/logistics_root_cause")
-async def get_logistics_root_cause(upload_id: int | None = Query(None)):
+async def get_logistics_root_cause():
     """Return logistics root cause data for the upload (disposition mix, etc.)"""
-    result = get_disposition_mix(upload_id)
-
+    result = get_disposition_mix()
+    
     return {
-        "upload_id": result.get("upload_id"),
-        "logistics_root_cause": {
-            "disposition_mix": result.get("disposition_mix", [])
-        }
+        "logistics_root_cause": result["logistics_root_cause"]
     }
