@@ -2,20 +2,13 @@ import pandas as pd
 from sqlalchemy import text
 from app.core.database import engine
 
-def insert_duration_event(upload_id: int) -> int:
+def insert_duration_event(upload_id: int | None = None) -> int:
     query = text("""
         SELECT stay_id, activity, ed_timestamp, upload_id
         FROM ed_stay
-        WHERE upload_id = :upload_id
+        WHERE (:upload_id IS NULL OR upload_id = :upload_id)
         ORDER BY stay_id, ed_timestamp
     """)
-###################################
-def insert_duration_event(upload_id: int | None = None) -> int:
-    # The `upload_id` parameter is included for traceability and future use,
-    # though the current aggregation logic operates globally on all data.
-
-    # Fetch all data sorted by stay_id and timestamp
-    query = "SELECT stay_id, activity, ed_timestamp FROM ed_stay ORDER BY stay_id, ed_timestamp"
     
     with engine.connect() as conn:
         df = pd.read_sql(query, conn, params={"upload_id": upload_id})
