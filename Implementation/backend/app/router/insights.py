@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from app.services.disposition_dis import get_disposition_mix
+from app.services.insights_services import get_disposition_mix
 
 router = APIRouter(
     prefix="/insights",

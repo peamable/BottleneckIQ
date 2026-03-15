@@ -6,8 +6,7 @@ router = APIRouter(prefix="/metrics", tags=["metrics"])
 
 @router.get("/dashboard")
 async def get_dashboard_data(
-    upload_id: Optional[int] = Query(None), 
-    batch_id: Optional[str] = Query(None) 
+    upload_id: Optional[int] = Query(None)
 ):
     # Use service to find ID if not provided
     effective_id = upload_id or service.get_latest_upload_id()
@@ -17,10 +16,19 @@ async def get_dashboard_data(
         # to keep the frontend from crashing
         return {"upload_id": None, "metrics": [], "message": "No data available"}
         
-    rows = service.get_metrics_data(effective_id, batch_id)
+    rows = service.get_metrics_data(effective_id)
     
     return {
         "upload_id": effective_id,
-        "batch_id": batch_id,
         "metrics": rows
     }
+
+@router.get("/acuity-benchmarks")
+def get_acuity_benchmarks(
+    upload_id: Optional[int] = Query(None)
+):
+    effective_id = upload_id or service.get_latest_upload_id()
+    if not effective_id:
+        raise HTTPException(status_code=404, detail="No completed upload found.")
+
+    return service.build_acuity_benchmarks(effective_id)

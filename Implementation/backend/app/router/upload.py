@@ -19,6 +19,9 @@ UPLOAD_DIR = settings["UPLOAD_DIR"]
 
 @router.post("/upload")
 async def upload(file: UploadFile = File(...)):
+    upload_id = None
+    batch_id = None
+
     if not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files are allowed.")
 
@@ -59,9 +62,12 @@ async def upload(file: UploadFile = File(...)):
         # Process batch
         result = process_batch(
             df_ed_stay, 
-            df_stay_info, 
-            period_start_dt,
-            period_end_dt
+            df_stay_info,
+            upload_id=upload_id,
+            batch_id=batch_id,
+            period_start=period_start_dt,
+            period_end=period_end_dt,
+            cleanup=True
         )
         logger.info(f"Batch processed: {result}")
 
@@ -70,12 +76,13 @@ async def upload(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail={"upload_id": upload_id, "batch_id": batch_id, "errors": result["errors"]})
 
         # Aggregation
-        affected = insert_duration_event()
+        affected = insert_duration_event(upload_id) # now don't accept upload_id here, it will just insert for all stays that don't have it yet
         logger.info(f"Duration events inserted: {affected}")
 
         # Metrics
         try:
-            metrics_result = calculate_and_store_metrics()
+            metrics_result = calculate_and_store_metrics(upload_id) # now don't accept upload_id here, it will calculate for all stays that don't have metrics yet
+            logger.info(f"Metrics calculated and stored: {metrics_result}")
         except Exception as e:
             logger.warning(f"Metrics failed: {e}")
             metrics_result = f"Metrics failed: {e}"
@@ -99,5 +106,11 @@ async def upload(file: UploadFile = File(...)):
     except HTTPException:
         raise
     except Exception as e:
+        if upload_id is not None:
+            try:
+                update_upload_status(upload_id, "failed")
+            except Exception as status_err:
+                logger.error(f"Failed to update upload status: {status_err}")
+
         logger.error(f"Upload failed: {str(e)}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
