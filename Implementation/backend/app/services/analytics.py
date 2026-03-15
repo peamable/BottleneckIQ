@@ -3,7 +3,6 @@ import numpy as np
 from sqlalchemy import text
 import json
 from app.core.database import engine
-from datetime import datetime
 
 
 
@@ -21,12 +20,16 @@ def calculate_and_store_metrics(upload_id: int, batch_id: str | None = None):
         SELECT el.*, si.scale_level
         FROM event_log el
         JOIN stay_info si ON el.stay_id = si.stay_id
+            AND el.upload_id = si.upload_id
+        WHERE el.upload_id = :upload_id
     """
     with engine.connect() as conn:
-        df = pd.read_sql(text(query), conn)
+        df = pd.read_sql(text(query), conn,params={
+            "upload_id": upload_id
+        })
 
     if df.empty:
-        return "No data found to calculate metrics."
+        return f"No data found to calculate metrics for upload_id={upload_id}."
 
     metrics_to_insert = []
     
@@ -42,15 +45,23 @@ def calculate_and_store_metrics(upload_id: int, batch_id: str | None = None):
                 p99_val = round(float(np.percentile(series, 99)), 2)
                 min_val = round(float(series.min()), 2)
                 max_val = round(float(series.max()), 2)
+#     metric_columns = [
+#         col for col in df.columns
+#         if col.startswith("time_to") or col == "total_ed_stay_time"
+#     ]
 
-                # Acuity Breakdown (JSON)
-                acuity_group = df.groupby('scale_level')[col].mean().to_dict()
-                # Ensure we handle potential NaN values in the breakdown
-                clean_acuity = {
-                    str(int(k)): round(float(v) , 2)
-                    for k, v in acuity_group.items() 
-                    if pd.notnull(v)
-                }
+#     for col in metric_columns:
+#         series = pd.to_numeric(df[col], errors="coerce").dropna()
+#         if series.empty:
+#             continue
+
+        # Calculate stats - keeping as floats for precision
+        avg_val = round(float(series.mean()), 2)
+        p75_val = round(float(np.percentile(series, 75)), 2)
+        p90_val = round(float(np.percentile(series, 90)), 2)
+        p99_val = round(float(np.percentile(series, 99)), 2)
+        min_val = round(float(series.min()), 2)
+        max_val = round(float(series.max()), 2)
 
                 metrics_to_insert.append({
                     'metric_name': col,
@@ -63,6 +74,30 @@ def calculate_and_store_metrics(upload_id: int, batch_id: str | None = None):
                     'stay_time_per_acuity': json.dumps(clean_acuity),
                     'upload_id': upload_id
                 })
+#         # Use the same numeric coercion for the acuity breakdown.
+#         acuity_df = df[["scale_level", col]].copy()
+#         acuity_df[col] = pd.to_numeric(acuity_df[col], errors="coerce")
+#         acuity_group = acuity_df.groupby("scale_level")[col].mean().to_dict()
+#         clean_acuity = {
+#             str(int(k)): round(float(v), 2)
+#             for k, v in acuity_group.items()
+#             if pd.notnull(v)
+#         }
+
+#         metrics_to_insert.append({
+#             'metric_name': col,
+#             'avg_value': avg_val,
+#             'p90_value': p90_val,
+#             'p75_value': p75_val,
+#             'p99_value': p99_val,
+#             'min_value': min_val,
+#             'max_value': max_val,
+#             'stay_time_per_acuity': json.dumps(clean_acuity),
+#             'upload_id': upload_id
+#         })
+
+#     if not metrics_to_insert:
+#         return f"No eligible metric columns found for upload_id={upload_id}."
 
     # 2. Database Insert
     insert_sql = text("""
@@ -92,6 +127,8 @@ def calculate_and_store_metrics(upload_id: int, batch_id: str | None = None):
     except Exception as e:
         return f"Database Error: {e}"
     
+#             conn.execute(insert_sql, metrics_to_insert)
+#         return f"Successfully populated metrics for Upload ID {upload_id}."
     except Exception as e:
         return f"Database Error: {e}"
     

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Plot from 'react-plotly.js'; // You'll need to install this
 import BottleneckBanner from '../components/bottleneck_banner';
 import '../insights.css';
@@ -6,7 +6,46 @@ import mockData from "../insights_mock.json";
 
 
 const InsightsPage = () => {
-  return (
+  const [insightsData, setInsightsData] = useState(mockData);
+  const [loading, setLoading] = useState(true);
+const [error, setError] = useState(null);
+
+useEffect(() => {
+  const controller = new AbortController();
+
+  const fetchDispositionMix = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:8000/insights/logistics_root_cause', {
+        signal: controller.signal 
+      });
+
+      if (!response.ok) throw new Error(`Error: ${response.status}`);
+
+      const payload = await response.json();
+      
+      setInsightsData(prev => ({
+        ...prev,
+        logistics_root_cause: {
+          ...prev.logistics_root_cause,
+          disposition_mix: payload.logistics_root_cause.disposition_mix
+        },
+      }));
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.warn('Falling back to mock data', err);
+        setError(err.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchDispositionMix();
+  return () => controller.abort(); // Cleanup
+}, []);
+
+    return (
     <div className="insights_container">
       {/* SECTION 1: THE FORECAST HUB */}
       <section className="insight_block forecast_hub">
@@ -99,8 +138,8 @@ const InsightsPage = () => {
       <h4>Disposition Distribution</h4>
       <Plot
         data={[{
-          values: mockData?.logistics_root_cause?.disposition_mix?.map(d => d.percentage) || [],
-          labels: mockData?.logistics_root_cause?.disposition_mix?.map(d => d.type) || [],
+          values: insightsData?.logistics_root_cause?.disposition_mix?.map(d => d.percentage) || [],
+          labels: insightsData?.logistics_root_cause?.disposition_mix?.map(d => d.type) || [],
           type: 'pie',
           hole: 0.4,
           marker: { colors: ['#2563eb', '#10b981', '#ef4444', '#f59e0b', '#94a3b8'] },

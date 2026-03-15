@@ -19,13 +19,16 @@ UPLOAD_DIR = settings["UPLOAD_DIR"]
 
 @router.post("/upload")
 async def upload(file: UploadFile = File(...)):
+    upload_id = None
+    batch_id = None
+
     if not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV files are allowed.")
 
     # to change after how to determine period, for now we will just use current month as default
     try:
         # Generate default period: current month start to end
-        now = datetime.utcnow()
+        now = datetime.now()
         period_start_dt = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         
         # Last day of current month
@@ -63,7 +66,15 @@ async def upload(file: UploadFile = File(...)):
             period_start=period_start_dt,
             period_end=period_end_dt,
             batch_id=batch_id,
-            upload_id=upload_id
+            upload_id=upload_id,
+            cleanup=True
+#             df_ed_stay, 
+#             df_stay_info,
+#             upload_id=upload_id,
+#             batch_id=batch_id,
+#             period_start=period_start_dt,
+#             period_end=period_end_dt,
+#             cleanup=True
         )
         logger.info(f"Batch processed: {result}")
 
@@ -73,6 +84,7 @@ async def upload(file: UploadFile = File(...)):
 
         # Aggregation
         affected = insert_duration_event(upload_id=upload_id)
+#       affected = insert_duration_event(upload_id) # now don't accept upload_id here, it will just insert for all stays that don't have it yet
         logger.info(f"Duration events inserted: {affected}")
 
         # Metrics
@@ -85,6 +97,8 @@ async def upload(file: UploadFile = File(...)):
             # Hourly Aggregates
             hourly_result = generate_hourly_aggregates(upload_id=upload_id)
             logger.info(f"Hourly aggregates: {hourly_result}")
+#             metrics_result = calculate_and_store_metrics(upload_id) # now don't accept upload_id here, it will calculate for all stays that don't have metrics yet
+#             logger.info(f"Metrics calculated and stored: {metrics_result}")
         except Exception as e:
             logger.warning(f"Metrics failed: {e}")
             metrics_result = f"Metrics failed: {e}"
@@ -109,5 +123,11 @@ async def upload(file: UploadFile = File(...)):
     except HTTPException:
         raise
     except Exception as e:
+        if upload_id is not None:
+            try:
+                update_upload_status(upload_id, "failed")
+            except Exception as status_err:
+                logger.error(f"Failed to update upload status: {status_err}")
+
         logger.error(f"Upload failed: {str(e)}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")

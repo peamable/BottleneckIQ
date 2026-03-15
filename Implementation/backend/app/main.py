@@ -3,6 +3,8 @@ from sqlalchemy import text, inspect
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import engine
 from app.router.upload import router as upload_router
+from app.router.metrics import router as metrics_router
+from app.router.insights import router as insights_router
 
 
 
@@ -48,6 +50,8 @@ def list_db_tables():
 
 
 app.include_router(upload_router)
+app.include_router(metrics_router)
+app.include_router(insights_router)
 
 
 

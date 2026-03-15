@@ -1,25 +1,31 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { 
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, Legend, ReferenceLine 
 } from 'recharts';
-// import Banner from './Banner'; // Your existing separate JSX
+// import Banner from './Banner'; // the existing separate JSX
 import BottleneckBanner from '../components/bottleneck_banner';
+import EmptyMetricsState from '../components/empty_metrics_state';
 import '../view_metrics.css';
 import mockData from "../view_metrics_mock.json";
 
 
 const ViewMetrics = () => {
+  const location = useLocation();
   // These states would be populated by your 'metrics' table row
-  const [selectedStage, setSelectedStage] = useState('triage_to_vital');
+  const [selectedStage, setSelectedStage] = useState('time_to_vital');
   const [lookback, setLookback] = useState(10);
-  //for teh data cards
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasNoMetrics, setHasNoMetrics] = useState(false);
+  const [acuityMetrics, setAcuityMetrics] = useState([]);
+  //for the data cards
   const cardConfigs = [
-    { label: "ENTRY → TRIAGE", key: "entry_to_triage" },
-    { label: "TRIAGE → VITALS", key: "triage_to_vitals" },
-    { label: "VITALS → MEDRECON", key: "vitals_to_medrecon" },
-    { label: "MEDRECON → DISPENSE", key: "medrecon_to_dispense" },
-    { label: "DISPENSE → EXIT", key: "dispense_to_exit" }
+    { label: "TIME → TRIAGE", key: "time_to_triage" },
+    { label: "TIME → VITALS", key: "time_to_vital" },
+    { label: "TIME → MEDRECON", key: "time_to_medrecon" },
+    { label: "TIME → DISPENSE", key: "time_to_dispen" },
+    { label: "TIME → DISCHARGE", key: "time_to_discharge" }
   ];
   // helper function for the arrows in the card
   const getTrendClass = (dir) => {
@@ -35,7 +41,16 @@ const ViewMetrics = () => {
   };
   //for the line chart
   const [percentileLevel, setPercentileLevel] = useState('p90'); // Default to P90
-  const activeDataKey = `${selectedStage}_${percentileLevel}`; //used for the line chart to determine what is shown based on user selection
+  const trendStageMap = {
+    total_stay: "total_stay",
+    time_to_triage: "time_to_triage",
+    time_to_vital: "time_to_vital",
+    time_to_medrecon: "time_to_medrecon",
+    time_to_dispen: "time_to_dispen",
+    time_to_discharge: "time_to_discharge"
+  };
+  const selectedTrendStage = trendStageMap[selectedStage] ?? selectedStage;
+  const activeDataKey = `${selectedTrendStage}_${percentileLevel}`; //used for the line chart to determine what is shown based on user selection
   // Use a separate variable for the display label in the Legend/Tooltip
   const displayLabel = `${selectedStage.replace(/_/g, ' ')} (${percentileLevel.toUpperCase()})`;
   // Helper to make the Legend/Tooltip look nice
@@ -45,19 +60,180 @@ const ViewMetrics = () => {
     return `${stageName} (${levelName})`;
   };
   const [dashboardData, setDashboardData] = useState(null);
-
+ // Fetch the dashboard metrics when the component mounts or when the upload_id in location state changes
   useEffect(() => {
-    setDashboardData(mockData)
-  })
+    const fetchDashboardMetrics = async () => {
+      setIsLoading(true);
+      setHasNoMetrics(false);
+
+      /*try {
+        const uploadId = location.state?.upload_id;
+        const url = uploadId
+          ? `http://localhost:8000/metrics/dashboard?upload_id=${uploadId}`
+          : "http://localhost:8000/metrics/dashboard";
+
+        const response = await fetch(url);
+        if (!response.ok) {
+          if (response.status === 404) {
+            setHasNoMetrics(true);
+            setDashboardData(null);
+            return;
+          }
+          throw new Error(`Failed to load metrics (${response.status})`);
+        }
+
+        const payload = await response.json();
+        const metrics = payload.metrics ?? [];
+        if (!metrics.length) {
+          setHasNoMetrics(true);
+          setDashboardData(null);
+          setAcuityMetrics([]);
+          return;
+        }*/
+
+        try {
+          const uploadId = location.state?.upload_id;
+         
+          const dashboardUrl = uploadId
+            ? `http://localhost:8000/metrics/dashboard?upload_id=${uploadId}`
+            : "http://localhost:8000/metrics/dashboard";
+
+          const acuityUrl = uploadId
+            ? `http://localhost:8000/metrics/acuity-benchmarks?upload_id=${uploadId}`
+            : "http://localhost:8000/metrics/acuity-benchmarks";
+
+          const [dashboardResponse, acuityResponse] = await Promise.all([
+            fetch(dashboardUrl),
+            fetch(acuityUrl)
+          ]);
+
+          if (!dashboardResponse.ok) {
+            if (dashboardResponse.status === 404) {
+              setHasNoMetrics(true);
+              setDashboardData(null);
+              setAcuityMetrics([]);
+              return;
+            }
+            throw new Error(`Failed to load metrics (${dashboardResponse.status})`);
+          }
+
+          const dashboardPayload = await dashboardResponse.json();
+          const metrics = dashboardPayload.metrics ?? [];
+
+          let acuityPayload = { acuity_benchmarks: [] };
+          if (acuityResponse.ok) {
+            acuityPayload = await acuityResponse.json();
+          }
+
+          if (!metrics.length) {
+            setHasNoMetrics(true);
+            setDashboardData(null);
+            setAcuityMetrics([]);
+            return;
+          }
+
+
+        const metricByName = Object.fromEntries(metrics.map((m) => [m.metric_name, m]));
+        const averageStay = metricByName.total_ed_stay_time?.avg_value ?? null;
+        const colorScale = ["#2563eb", "#ef4444", "#f59e0b", "#10b981", "#94a3b8"];
+
+        const metricCard = (metricNames) => {
+          const keys = Array.isArray(metricNames) ? metricNames : [metricNames];
+          const foundMetric = keys.map((name) => metricByName[name]).find(Boolean);
+          const value = foundMetric?.avg_value;
+          return {
+            value: value != null ? Number(value).toFixed(1) : "--",
+            direction: "flat",
+            trend: 0
+          };
+        };
+
+        const acuityRaw = metricByName.total_ed_stay_time?.stay_time_per_acuity ?? {};
+        const acuityBenchmarks = Object.entries(acuityRaw)
+          .sort((a, b) => Number(a[0]) - Number(b[0]))
+          .map(([level, val], idx) => {
+            const value = Number(val);
+            const diff = averageStay != null ? value - Number(averageStay) : null;
+            return {
+              name: `Level ${level}`,
+              avg: `${value.toFixed(1)}m`,
+              diff: diff == null ? "--" : `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}m`,
+              type: diff != null && diff <= 0 ? "good" : "warning",
+              color: colorScale[idx % colorScale.length]
+            };
+          });
+/*
+        const acuityRaw = metricByName.total_ed_stay_time?.stay_time_per_acuity ?? {};
+        const acuityBenchmarks = Object.entries(acuityRaw)
+          .sort((a, b) => Number(a[0]) - Number(b[0]))
+          .map(([level, val], idx) => {
+            const value = Number(val);
+            const diff = averageStay != null ? value - Number(averageStay) : null;
+            return {
+              name: `Level ${level}`,
+              avg: `${value.toFixed(1)}m`,
+              diff: diff == null ? "--" : `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}m`,
+              type: diff != null && diff <= 0 ? "good" : "warning",
+              color: colorScale[idx % colorScale.length]
+            };
+          });
+*/
+        setAcuityMetrics(acuityPayload.acuity_benchmarks ?? []);
+
+        setDashboardData({
+          ...mockData,
+          summary: {
+            ...mockData.summary,
+            avg_stay: {
+              value: averageStay != null ? Number(averageStay).toFixed(1) : "--",
+              direction: "flat",
+              trend: 0
+            },
+            time_to_triage: metricCard("time_to_triage"),
+            time_to_vital: metricCard("time_to_vital"),
+            time_to_medrecon: metricCard("time_to_medrecon"),
+            time_to_dispen: metricCard("time_to_dispen"),
+            time_to_discharge: metricCard("time_to_discharge")
+          },
+          /*acuity_benchmarks: acuityBenchmarks.length ? acuityBenchmarks : mockData.acuity_benchmarks,
+          _meta: {
+            uploadId: payload.upload_id
+          }*/
+
+          acuity_benchmarks:
+          (acuityPayload.acuity_benchmarks ?? []).length
+            ? acuityPayload.acuity_benchmarks
+            : mockData.acuity_benchmarks,
+        _meta: {
+          uploadId: dashboardPayload.upload_id
+        }
+        });
+      } catch (error) {
+        console.error(error);
+        setDashboardData(mockData);
+        setAcuityMetrics(mockData.acuity_benchmarks ?? []);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardMetrics();
+  }, [location.state?.upload_id]);
 
   // 1. Determine which keys to pull from the JSON based on state
-    const p90Key = `${selectedStage}_p90`;
-    const p75Key = `${selectedStage}_p75`;
-    const p50Key = `${selectedStage}_p50`;
+    const p90Key = `${selectedTrendStage}_p90`;
+    const p75Key = `${selectedTrendStage}_p75`;
+    const p50Key = `${selectedTrendStage}_p50`;
     const baselineLabel = "AVERAGE FLOW (P50)";
     const focusLabel = `${selectedStage.replace(/_/g, ' ').toUpperCase()} (${percentileLevel.toUpperCase()})`;
 
-  
+  if (isLoading) {
+    return <div className="view_metrics_page_wrapper">Loading dashboard metrics...</div>;
+  }
+
+  if (hasNoMetrics) {
+    return <EmptyMetricsState />;
+  }
 
   return (
     <div className="view_metrics_page_wrapper">
@@ -86,7 +262,7 @@ const ViewMetrics = () => {
             </div>
           </div>
           
-          {/* Card 1: Entry to Triage */}
+          {/* Card 1: Time to Triage */}
 
           {cardConfigs.map((card) => {
             const data = dashboardData?.summary[card.key];
@@ -118,10 +294,11 @@ const ViewMetrics = () => {
         onChange={(e) => setSelectedStage(e.target.value)}
       >
         <option value="total_stay">Total Stay Time</option>
-        <option value="triage_to_vital">Triage to Vitals</option>
-        <option value="vital_to_medrecon">Vitals to MedRecon</option>
-        <option value="medrecon_to_dispense">MedRecon to Dispense</option>
-        <option value="dispense_to_exit">Dispense to Exit</option>
+        <option value="time_to_triage">Time to Triage</option>
+        <option value="time_to_vital">Time to Vitals</option>
+        <option value="time_to_medrecon">Time to MedRecon</option>
+        <option value="time_to_dispen">Time to Dispense</option>
+        <option value="time_to_discharge">Time to Discharge</option>
       </select>
     </div>
 
@@ -142,9 +319,9 @@ const ViewMetrics = () => {
     <span className="horizon_value">Feb 22, 2026 | 08:00 - 14:00</span>
     <div className="sync_status">
       <span className="live_dot"></span> 
-      Last Sync: 2m ago
+      Last Sync: just now
     </div>
-  </div>
+</div>
 </div>
 
         {/* 3. INTERACTIVE PERFORMANCE TREND (The "History") */}
@@ -158,10 +335,10 @@ const ViewMetrics = () => {
                 onChange={(e) => setSelectedStage(e.target.value)}
               >
                 <option value="total_stay">Total Stay Time</option>
-                <option value="triage_to_vital">Triage to Vitals</option>
-                <option value="vital_to_medrecon">Vitals to MedRecon</option>
-                <option value="medrecon_to_dispense">MedRecon to Dispense</option>
-                <option value="dispense_to_exit">Dispense to Exit</option>
+                <option value="time_to_vital">Time to Vitals</option>
+                <option value="time_to_medrecon">Time to MedRecon</option>
+                <option value="time_to_dispen">Time to Dispense</option>
+                <option value="time_to_discharge">Time to Discharge</option>
               </select>
               
               <select 
@@ -277,17 +454,21 @@ const ViewMetrics = () => {
             <h3 className="visual_header">Acuity Benchmarking</h3>
             <div className="acuity_table_labels">
               <span>PRIORITY LEVEL</span>
+              <span>REF ESI AVG</span>
               <span>AVG STAY</span>
-              <span>VS DEPT AVG</span>
+              <span>DELTA</span>
             </div>
 
-            {dashboardData?.acuity_benchmarks.map((item, index)=> (
+            {(acuityMetrics.length ? acuityMetrics : dashboardData?.acuity_benchmarks ?? []).map((item, index)=> (
               <div className='acuity_row' key={index}>
                 <div className="acuity_name_wrapper">
-                  <span className="acuity_color_indicator" style={{ backgroundColor: item.color }}></span>
+                  <span 
+                    className="acuity_color_indicator" 
+                    style={{ backgroundColor: item.color }}></span>
                 <span className="acuity_name">{item.name}</span>
                 </div>
-                <span className="stat_avg">{item.avg}</span>
+                <span className="stat_avg">{item.ref_esi_avg}</span>
+                <span className="stat_avg">{item.dept_avg}</span>
                 <span className={`benchmark_pill ${item.type === 'good' ? 'pill_good' : 'pill_warning'}`}>{item.diff}</span>
               </div>
             ))}
@@ -301,3 +482,4 @@ const ViewMetrics = () => {
 };
 
 export default ViewMetrics;
+
