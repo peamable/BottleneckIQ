@@ -95,7 +95,7 @@ def calculate_and_store_metrics(upload_id: int, batch_id: str | None = None):
     except Exception as e:
         return f"Database Error: {e}"
     
-def generate_hourly_aggregates(upload_id: int):
+def generate_hourly_aggregates(upload_id: int, batch_id: str | None = None):
     """
     Aggregates volume and acuity into hourly buckets for forecasting.
     Temporal features (month, day, hour) are extracted for pattern analysis.
@@ -151,8 +151,8 @@ def generate_hourly_aggregates(upload_id: int):
     
     # 6. Insert into Database
     try:
-        final_df.to_sql('hourly_aggregates', engine, if_exists='append', index=False)
-        return f"Successfully generated hourly aggregates. Rows: {len(final_df)}"
+        final_df.to_sql('temporal_summary', engine, if_exists='append', index=False)
+        return f"Successfully generated tomporal summary. Rows: {len(final_df)}"
     except Exception as e:
         return f"Error: {e}"
 
