@@ -53,6 +53,21 @@ CREATE TABLE `event_log` (
   CONSTRAINT `event_log_ibfk_1` FOREIGN KEY (`upload_id`) REFERENCES `upload_history` (`upload_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+DROP TABLE IF EXISTS `hourly_aggregates`;
+CREATE TABLE `hourly_aggregates` (
+  `timestamp_hour` datetime DEFAULT NULL,
+  `total_volume` bigint DEFAULT NULL,
+  `acuity_1` bigint DEFAULT NULL,
+  `acuity_2` bigint DEFAULT NULL,
+  `acuity_3` bigint DEFAULT NULL,
+  `acuity_4` bigint DEFAULT NULL,
+  `acuity_5` bigint DEFAULT NULL,
+  `month_of_year` int DEFAULT NULL,
+  `day_of_week` int DEFAULT NULL,
+  `hour_of_day` int DEFAULT NULL,
+  `upload_id` bigint DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 
 DROP TABLE IF EXISTS `metrics`;
 CREATE TABLE `metrics` (
@@ -117,6 +132,24 @@ CREATE TABLE `stay_info_staging` (
   CONSTRAINT `fk_stay_info_upload` FOREIGN KEY (`upload_id`) REFERENCES `upload_history` (`upload_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+DROP TABLE IF EXISTS `temporal_summary`;
+CREATE TABLE `temporal_summary` (
+  `aggregate_id` bigint NOT NULL AUTO_INCREMENT,
+  `timestamp_hour` datetime NOT NULL,
+  `total_volume` int NOT NULL,
+  `month_of_year` int NOT NULL,
+  `day_of_week` int NOT NULL,
+  `hour_of_day` int NOT NULL,
+  `acuity_1` int DEFAULT '0',
+  `acuity_2` int DEFAULT '0',
+  `acuity_3` int DEFAULT '0',
+  `acuity_4` int DEFAULT '0',
+  `acuity_5` int DEFAULT '0',
+  `upload_id` bigint NOT NULL,
+  PRIMARY KEY (`aggregate_id`),
+  KEY `upload_id` (`upload_id`),
+  CONSTRAINT `temporal_summary_ibfk_1` FOREIGN KEY (`upload_id`) REFERENCES `upload_history` (`upload_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 DROP TABLE IF EXISTS `thresholds`;
 CREATE TABLE `thresholds` (
