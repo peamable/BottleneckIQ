@@ -18,6 +18,7 @@ const ViewMetrics = () => {
   const [lookback, setLookback] = useState(10);
   const [isLoading, setIsLoading] = useState(true);
   const [hasNoMetrics, setHasNoMetrics] = useState(false);
+  const [acuityMetrics, setAcuityMetrics] = useState([]);
   //for the data cards
   const cardConfigs = [
     { label: "TIME → TRIAGE", key: "time_to_triage" },
@@ -65,7 +66,7 @@ const ViewMetrics = () => {
       setIsLoading(true);
       setHasNoMetrics(false);
 
-      try {
+      /*try {
         const uploadId = location.state?.upload_id;
         const url = uploadId
           ? `http://localhost:8000/metrics/dashboard?upload_id=${uploadId}`
@@ -86,8 +87,51 @@ const ViewMetrics = () => {
         if (!metrics.length) {
           setHasNoMetrics(true);
           setDashboardData(null);
+          setAcuityMetrics([]);
           return;
-        }
+        }*/
+
+        try {
+          const uploadId = location.state?.upload_id;
+         
+          const dashboardUrl = uploadId
+            ? `http://localhost:8000/metrics/dashboard?upload_id=${uploadId}`
+            : "http://localhost:8000/metrics/dashboard";
+
+          const acuityUrl = uploadId
+            ? `http://localhost:8000/metrics/acuity-benchmarks?upload_id=${uploadId}`
+            : "http://localhost:8000/metrics/acuity-benchmarks";
+
+          const [dashboardResponse, acuityResponse] = await Promise.all([
+            fetch(dashboardUrl),
+            fetch(acuityUrl)
+          ]);
+
+          if (!dashboardResponse.ok) {
+            if (dashboardResponse.status === 404) {
+              setHasNoMetrics(true);
+              setDashboardData(null);
+              setAcuityMetrics([]);
+              return;
+            }
+            throw new Error(`Failed to load metrics (${dashboardResponse.status})`);
+          }
+
+          const dashboardPayload = await dashboardResponse.json();
+          const metrics = dashboardPayload.metrics ?? [];
+
+          let acuityPayload = { acuity_benchmarks: [] };
+          if (acuityResponse.ok) {
+            acuityPayload = await acuityResponse.json();
+          }
+
+          if (!metrics.length) {
+            setHasNoMetrics(true);
+            setDashboardData(null);
+            setAcuityMetrics([]);
+            return;
+          }
+
 
         const metricByName = Object.fromEntries(metrics.map((m) => [m.metric_name, m]));
         const averageStay = metricByName.total_ed_stay_time?.avg_value ?? null;
@@ -118,6 +162,23 @@ const ViewMetrics = () => {
               color: colorScale[idx % colorScale.length]
             };
           });
+/*
+        const acuityRaw = metricByName.total_ed_stay_time?.stay_time_per_acuity ?? {};
+        const acuityBenchmarks = Object.entries(acuityRaw)
+          .sort((a, b) => Number(a[0]) - Number(b[0]))
+          .map(([level, val], idx) => {
+            const value = Number(val);
+            const diff = averageStay != null ? value - Number(averageStay) : null;
+            return {
+              name: `Level ${level}`,
+              avg: `${value.toFixed(1)}m`,
+              diff: diff == null ? "--" : `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}m`,
+              type: diff != null && diff <= 0 ? "good" : "warning",
+              color: colorScale[idx % colorScale.length]
+            };
+          });
+*/
+        setAcuityMetrics(acuityPayload.acuity_benchmarks ?? []);
 
         setDashboardData({
           ...mockData,
@@ -134,14 +195,23 @@ const ViewMetrics = () => {
             time_to_dispen: metricCard("time_to_dispen"),
             time_to_discharge: metricCard("time_to_discharge")
           },
-          acuity_benchmarks: acuityBenchmarks.length ? acuityBenchmarks : mockData.acuity_benchmarks,
+          /*acuity_benchmarks: acuityBenchmarks.length ? acuityBenchmarks : mockData.acuity_benchmarks,
           _meta: {
             uploadId: payload.upload_id
-          }
+          }*/
+
+          acuity_benchmarks:
+          (acuityPayload.acuity_benchmarks ?? []).length
+            ? acuityPayload.acuity_benchmarks
+            : mockData.acuity_benchmarks,
+        _meta: {
+          uploadId: dashboardPayload.upload_id
+        }
         });
       } catch (error) {
         console.error(error);
         setDashboardData(mockData);
+        setAcuityMetrics(mockData.acuity_benchmarks ?? []);
       } finally {
         setIsLoading(false);
       }
@@ -384,17 +454,21 @@ const ViewMetrics = () => {
             <h3 className="visual_header">Acuity Benchmarking</h3>
             <div className="acuity_table_labels">
               <span>PRIORITY LEVEL</span>
+              <span>REF ESI AVG</span>
               <span>AVG STAY</span>
-              <span>VS DEPT AVG</span>
+              <span>DELTA</span>
             </div>
 
-            {dashboardData?.acuity_benchmarks?.map((item, index)=> (
+            {(acuityMetrics.length ? acuityMetrics : dashboardData?.acuity_benchmarks ?? []).map((item, index)=> (
               <div className='acuity_row' key={index}>
                 <div className="acuity_name_wrapper">
-                  <span className="acuity_color_indicator" style={{ backgroundColor: item.color }}></span>
+                  <span 
+                    className="acuity_color_indicator" 
+                    style={{ backgroundColor: item.color }}></span>
                 <span className="acuity_name">{item.name}</span>
                 </div>
-                <span className="stat_avg">{item.avg}</span>
+                <span className="stat_avg">{item.ref_esi_avg}</span>
+                <span className="stat_avg">{item.dept_avg}</span>
                 <span className={`benchmark_pill ${item.type === 'good' ? 'pill_good' : 'pill_warning'}`}>{item.diff}</span>
               </div>
             ))}

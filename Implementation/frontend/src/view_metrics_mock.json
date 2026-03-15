@@ -19,11 +19,11 @@
     { "hour": "14:00", "Level 1": 2, "Level 2": 4, "Level 3": 8, "Level 4": 5, "Level 5": 1 }
   ],
   "acuity_benchmarks": [
-    { "name": "Level 1 (Resuscitation)", "avg": "45m", "diff": "-140m", "type": "good", "color": "#2563eb"},
-    { "name": "Level 2 (Emergent)", "avg": "210m", "diff": "+25m", "type": "warning", "color": "#ef4444" },
-    { "name": "Level 3 (Urgent)", "avg": "195m", "diff": "+10m", "type": "warning", "color": "#f59e0b" },
-    { "name": "Level 4 (Less Urgent)", "avg": "115m", "diff": "-70m", "type": "good", "color": "#10b981" },
-    { "name": "Level 5 (Non-Urgent)", "avg": "90m", "diff": "-95m", "type": "good", "color": "#94a3b8" }
+    { "name": "Level 1 (Resuscitation)", "ref_esi_avg": "45m", "dept_avg": "45m", "diff": "-140m", "type": "good", "color": "#2563eb"},
+    { "name": "Level 2 (Emergent)", "ref_esi_avg": "210m", "dept_avg": "210m", "diff": "+25m", "type": "warning", "color": "#ef4444" },
+    { "name": "Level 3 (Urgent)", "ref_esi_avg": "195m", "dept_avg": "195m", "diff": "+10m", "type": "warning", "color": "#f59e0b" },
+    { "name": "Level 4 (Less Urgent)", "ref_esi_avg": "115m", "dept_avg": "115m", "diff": "-70m", "type": "good", "color": "#10b981" },
+    { "name": "Level 5 (Non-Urgent)", "ref_esi_avg": "90m", "dept_avg": "90m", "diff": "-95m", "type": "good", "color": "#94a3b8" }
   ],
   "trend_chart": [
     { 

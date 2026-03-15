@@ -13,9 +13,25 @@ CREATE TABLE `ed_stay` (
   `stay_id` bigint NOT NULL,
   `ed_timestamp` datetime NOT NULL,
   `activity` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `upload_id` bigint NOT NULL,
   PRIMARY KEY (`record_id`),
-  KEY `stay_id_ed_timestamp_activity` (`stay_id`,`ed_timestamp`,`activity`)
+  KEY `stay_id_ed_timestamp_activity` (`stay_id`,`ed_timestamp`,`activity`),
+  KEY `upload_id` (`upload_id`),
+  CONSTRAINT `ed_stay_ibfk_3` FOREIGN KEY (`upload_id`) REFERENCES `upload_history` (`upload_id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+DROP TABLE IF EXISTS `ed_stay_staging`;
+CREATE TABLE `ed_stay_staging` (
+  `stay_id` bigint DEFAULT NULL,
+  `ed_timestamp` datetime DEFAULT NULL,
+  `activity` varchar(255) DEFAULT NULL,
+  `batch_id` varchar(50) DEFAULT NULL,
+  `upload_id` bigint DEFAULT NULL,
+  `ingested_at` datetime DEFAULT NULL,
+  KEY `idx_upload_id` (`upload_id`),
+  CONSTRAINT `fk_ed_stay_upload` FOREIGN KEY (`upload_id`) REFERENCES `upload_history` (`upload_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
 DROP TABLE IF EXISTS `event_log`;
@@ -30,8 +46,11 @@ CREATE TABLE `event_log` (
   `total_ed_stay_time` int DEFAULT NULL,
   `event_flow` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `skipped_stages` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `upload_id` bigint DEFAULT NULL,
   PRIMARY KEY (`event_log_id`),
-  UNIQUE KEY `idx_unq_event_stay_id` (`stay_id`)
+  UNIQUE KEY `idx_unq_event_stay_id` (`stay_id`),
+  KEY `upload_id` (`upload_id`),
+  CONSTRAINT `event_log_ibfk_1` FOREIGN KEY (`upload_id`) REFERENCES `upload_history` (`upload_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -74,9 +93,29 @@ CREATE TABLE `stay_info` (
   `disposition` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `chiefcomplaint` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `scale_level` smallint NOT NULL,
+  `upload_id` bigint NOT NULL,
   PRIMARY KEY (`stay_info_id`),
-  UNIQUE KEY `stay_id` (`stay_id`)
+  UNIQUE KEY `stay_id` (`stay_id`),
+  KEY `upload_id` (`upload_id`),
+  CONSTRAINT `stay_info_ibfk_1` FOREIGN KEY (`upload_id`) REFERENCES `upload_history` (`upload_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+DROP TABLE IF EXISTS `stay_info_staging`;
+CREATE TABLE `stay_info_staging` (
+  `stay_id` bigint DEFAULT NULL,
+  `gender` varchar(10) DEFAULT NULL,
+  `race` varchar(255) DEFAULT NULL,
+  `arrival_transport` varchar(255) DEFAULT NULL,
+  `disposition` varchar(255) DEFAULT NULL,
+  `scale_level` double DEFAULT NULL,
+  `chiefcomplaint` varchar(255) DEFAULT NULL,
+  `batch_id` varchar(50) DEFAULT NULL,
+  `upload_id` bigint DEFAULT NULL,
+  `ingested_at` datetime DEFAULT NULL,
+  KEY `idx_upload_id` (`upload_id`),
+  CONSTRAINT `fk_stay_info_upload` FOREIGN KEY (`upload_id`) REFERENCES `upload_history` (`upload_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
 DROP TABLE IF EXISTS `thresholds`;
@@ -91,14 +130,14 @@ CREATE TABLE `thresholds` (
 DROP TABLE IF EXISTS `upload_history`;
 CREATE TABLE `upload_history` (
   `upload_id` bigint NOT NULL AUTO_INCREMENT,
-  `batch_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `batch_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `upload_timestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `period_start` datetime NOT NULL,
   `period_end` datetime NOT NULL,
-  `status` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
   PRIMARY KEY (`upload_id`),
   UNIQUE KEY `batch_id` (`batch_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- 2026-03-08 04:31:32 UTC
+-- 2026-03-15 21:50:10 UTC

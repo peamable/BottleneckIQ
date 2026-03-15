@@ -95,7 +95,7 @@
 /* --- ACUITY TABLE STYLING --- */
 .acuity_table_labels {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
   font-size: 0.75rem;
   color: #64748b;
   font-weight: 700;
@@ -108,7 +108,7 @@
 
 .acuity_row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
   align-items: center;
   padding: 1rem 0;
   border-bottom: 1px solid #e2e8f0;
