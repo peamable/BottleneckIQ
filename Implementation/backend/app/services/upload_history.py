@@ -29,8 +29,12 @@ def create_upload_history(period_start: str, period_end: str):
     return upload_id, batch_id
 
 def update_upload_status(upload_id: int, status: str):
-    """Update upload history status"""
     with engine.begin() as conn:
-        conn.execute(text("""
+        result = conn.execute(text("""
             UPDATE upload_history SET status=:status WHERE upload_id=:uid
         """), {"status": status, "uid": upload_id})
+        
+        if result.rowcount == 0:
+            # This helps you debug! If you see this in logs, 
+            # you know the frontend sent an ID that doesn't exist.
+            print(f"Warning: No record found for upload_id {upload_id}")

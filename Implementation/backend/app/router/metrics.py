@@ -1,67 +1,26 @@
 from fastapi import APIRouter, HTTPException, Query
-from typing import Optional # Add this import
-from sqlalchemy import text
-import json
-from app.core.database import engine
+from typing import Optional
+from app.services import metrics_services as service
 
-router = APIRouter(
-    prefix="/metrics",
-    tags=["metrics"]
-)
-
-# --- Updated Logic Function ---
-
-def get_metrics_filtered(upload_id: int, batch_id: Optional[int] = None):
-    # Base query
-    query_str = "SELECT * FROM metrics WHERE upload_id = :upload_id"
-    params = {"upload_id": upload_id}
-    
-    # Ready for the batch change!
-    if batch_id is not None:
-        query_str += " AND batch_id = :batch_id"
-        params["batch_id"] = batch_id
-        
-    query = text(query_str + " ORDER BY metric_name")
-    
-    with engine.connect() as conn:
-        rows = conn.execute(query, params).mappings().all()
-
-    normalized_rows = []
-    for row in rows:
-        row_dict = dict(row)
-        # Standard JSON normalization
-        acuity_val = row_dict.get("stay_time_per_acuity")
-        if isinstance(acuity_val, str):
-            try:
-                row_dict["stay_time_per_acuity"] = json.loads(acuity_val)
-            except json.JSONDecodeError:
-                row_dict["stay_time_per_acuity"] = {}
-        normalized_rows.append(row_dict)
-    return normalized_rows
-
-# --- Updated Endpoints ---
+router = APIRouter(prefix="/metrics", tags=["metrics"])
 
 @router.get("/dashboard")
 async def get_dashboard_data(
     upload_id: Optional[int] = Query(None), 
-    batch_id: Optional[int] = Query(None) 
+    batch_id: Optional[str] = Query(None) 
 ):
-    # 1. Logic to find the ID (your existing code is good)
-    if upload_id is None:
-        query_latest = text("SELECT MAX(upload_id) AS upload_id FROM metrics")
-        with engine.connect() as conn:
-            result = conn.execute(query_latest).mappings().first()
-            upload_id = result["upload_id"] if result else None
+    # Use service to find ID if not provided
+    effective_id = upload_id or service.get_latest_upload_id()
 
-    if upload_id is None:
-        raise HTTPException(status_code=404, detail="No metrics found.")
+    if effective_id is None:
+        # Return a 200 with empty data instead of a 404/422 
+        # to keep the frontend from crashing
+        return {"upload_id": None, "metrics": [], "message": "No data available"}
         
-    # 2. Get the actual rows
-    rows = get_metrics_filtered(upload_id, batch_id)
+    rows = service.get_metrics_data(effective_id, batch_id)
     
-    # 3. FIX: Wrap the response so React can read 'payload.metrics'
     return {
-        "upload_id": upload_id,
+        "upload_id": effective_id,
         "batch_id": batch_id,
-        "metrics": rows  # This is the key your ViewMetrics.jsx is looking for
+        "metrics": rows
     }
