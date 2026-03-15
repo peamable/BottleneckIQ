@@ -9,7 +9,7 @@ from app.config import settings
 from app.services.data_cleaning import clean_to_ed_stay_and_stay_info
 from app.services.data_ingestion import process_batch
 from app.services.aggregation import insert_duration_event
-from app.services.analytics import calculate_and_store_metrics
+from app.services.analytics import calculate_and_store_metrics, generate_hourly_aggregates
 from app.services.upload_history import create_upload_history, update_upload_status # New Import 
 
 # use  logger for the upload history 
@@ -61,13 +61,20 @@ async def upload(file: UploadFile = File(...)):
 
         # Process batch
         result = process_batch(
-            df_ed_stay, 
-            df_stay_info,
-            upload_id=upload_id,
-            batch_id=batch_id,
+            df_ed_stay=df_ed_stay,
+            df_stay_info=df_stay_info,
             period_start=period_start_dt,
             period_end=period_end_dt,
+            batch_id=batch_id,
+            upload_id=upload_id,
             cleanup=True
+#             df_ed_stay, 
+#             df_stay_info,
+#             upload_id=upload_id,
+#             batch_id=batch_id,
+#             period_start=period_start_dt,
+#             period_end=period_end_dt,
+#             cleanup=True
         )
         logger.info(f"Batch processed: {result}")
 
@@ -76,13 +83,22 @@ async def upload(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail={"upload_id": upload_id, "batch_id": batch_id, "errors": result["errors"]})
 
         # Aggregation
-        affected = insert_duration_event(upload_id) # now don't accept upload_id here, it will just insert for all stays that don't have it yet
+        affected = insert_duration_event(upload_id=upload_id)
+#       affected = insert_duration_event(upload_id) # now don't accept upload_id here, it will just insert for all stays that don't have it yet
         logger.info(f"Duration events inserted: {affected}")
 
         # Metrics
         try:
-            metrics_result = calculate_and_store_metrics(upload_id) # now don't accept upload_id here, it will calculate for all stays that don't have metrics yet
-            logger.info(f"Metrics calculated and stored: {metrics_result}")
+            metrics_result = calculate_and_store_metrics(
+                upload_id=upload_id,
+                batch_id=batch_id
+            )
+            
+            # Hourly Aggregates
+            hourly_result = generate_hourly_aggregates(upload_id=upload_id)
+            logger.info(f"Hourly aggregates: {hourly_result}")
+#             metrics_result = calculate_and_store_metrics(upload_id) # now don't accept upload_id here, it will calculate for all stays that don't have metrics yet
+#             logger.info(f"Metrics calculated and stored: {metrics_result}")
         except Exception as e:
             logger.warning(f"Metrics failed: {e}")
             metrics_result = f"Metrics failed: {e}"
@@ -100,7 +116,8 @@ async def upload(file: UploadFile = File(...)):
             "rows_ed_stay": int(len(df_ed_stay)),
             "rows_stay_info": int(len(df_stay_info)) if df_stay_info is not None else 0,
             "event_log_rows_affected": int(affected),
-            "metrics_status": metrics_result
+            "metrics_status": metrics_result,
+            "hourly_aggregates_status": hourly_result if 'hourly_result' in locals() else "Not run"
         }
 
     except HTTPException:

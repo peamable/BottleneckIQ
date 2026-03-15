@@ -110,16 +110,24 @@ def cleanup_staging(batch_id: str):
 
 
 def process_batch(
-    df_ed_stay: pd.DataFrame,
-    df_stay_info: pd.DataFrame,
-    upload_id: int,
-    period_start: datetime,
-    period_end: datetime,
-    batch_id: str = None,
-    cleanup: bool = True
-) -> dict:
-    if batch_id is None:
-        batch_id = f"batch_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        df_ed_stay: pd.DataFrame,
+        df_stay_info: pd.DataFrame,
+        period_start: datetime,
+        period_end: datetime, 
+        batch_id: str,
+        upload_id: int,
+        cleanup: bool = True
+    ) -> dict:
+#     df_ed_stay: pd.DataFrame,
+#     df_stay_info: pd.DataFrame,
+#     upload_id: int,
+#     period_start: datetime,
+#     period_end: datetime,
+#     batch_id: str = None,
+#     cleanup: bool = True
+# ) -> dict:
+#     if batch_id is None:
+#         batch_id = f"batch_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
     load_to_staging(df_ed_stay, df_stay_info, batch_id, upload_id=upload_id)
 

@@ -9,9 +9,20 @@ def insert_duration_event(upload_id: int) -> int:
         WHERE upload_id = :upload_id
         ORDER BY stay_id, ed_timestamp
     """)
+###################################
+def insert_duration_event(upload_id: int | None = None) -> int:
+    # The `upload_id` parameter is included for traceability and future use,
+    # though the current aggregation logic operates globally on all data.
 
+    # Fetch all data sorted by stay_id and timestamp
+    query = "SELECT stay_id, activity, ed_timestamp FROM ed_stay ORDER BY stay_id, ed_timestamp"
+    
     with engine.connect() as conn:
         df = pd.read_sql(query, conn, params={"upload_id": upload_id})
+
+    # De-duplicate the data to handle cases where the same file is uploaded twice.
+    # This ensures each event in a patient's journey is considered only once.
+    df = df.drop_duplicates()
 
     if df.empty:
         return 0
