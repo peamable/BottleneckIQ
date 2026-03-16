@@ -100,7 +100,8 @@ def calculate_and_store_metrics(upload_id: int, batch_id: str | None = None):
         return f"Successfully populated metrics for Upload ID {upload_id}."
     except Exception as e:
         return f"Database Error: {e}"
-    
+
+
 def generate_hourly_aggregates(upload_id: int, batch_id: str | None = None):
     """
     Aggregates volume and acuity into hourly buckets for forecasting.
@@ -112,7 +113,7 @@ def generate_hourly_aggregates(upload_id: int, batch_id: str | None = None):
             s.ed_timestamp,
             si.scale_level,
             s.stay_id
-        FROM ed_stay_staging s
+        FROM ed_stay s
         JOIN stay_info si ON s.stay_id = si.stay_id
         WHERE s.upload_id = :uid 
           AND s.activity = 'entry'
@@ -165,3 +166,4 @@ def generate_hourly_aggregates(upload_id: int, batch_id: str | None = None):
 if __name__ == "__main__":
    # print(calculate_and_store_metrics())
     print(calculate_and_store_metrics(upload_id=1))
+    print(generate_hourly_aggregates(upload_id=1))

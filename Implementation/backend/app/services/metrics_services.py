@@ -98,3 +98,38 @@ def build_acuity_benchmarks(upload_id: int) -> Dict[str, Any]:
         })
 
     return {"acuity_benchmarks": benchmarks}
+
+def get_hourly_patient_density(upload_id: int) -> List[Dict[str, Any]]:
+    """
+    Retrieves the 'Acuity Mix' per hour for the stacked bar chart.
+    Each row represents one hour of the day (00:00 - 23:00).
+    """
+    query = text("""
+        SELECT 
+            hour_of_day, 
+            SUM(acuity_1) as "Level 1",
+            SUM(acuity_2) as "Level 2",
+            SUM(acuity_3) as "Level 3",
+            SUM(acuity_4) as "Level 4",
+            SUM(acuity_5) as "Level 5"
+        FROM temporal_summary
+        WHERE upload_id = :u_id
+        GROUP BY hour_of_day
+        ORDER BY hour_of_day;
+    """)
+    
+    with engine.connect() as conn:
+        rows = conn.execute(query, {"u_id": upload_id}).mappings().all()
+        
+        # We format the hour into "HH:00" strings so Recharts renders the X-axis nicely
+        return [
+            {
+                "hour": f"{int(r['hour_of_day']):02d}:00",
+                "Level 1": int(r["Level 1"]),
+                "Level 2": int(r["Level 2"]),
+                "Level 3": int(r["Level 3"]),
+                "Level 4": int(r["Level 4"]),
+                "Level 5": int(r["Level 5"])
+            } 
+            for r in rows
+        ]

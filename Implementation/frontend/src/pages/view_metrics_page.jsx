@@ -102,9 +102,15 @@ const ViewMetrics = () => {
             ? `http://localhost:8000/metrics/acuity-benchmarks?upload_id=${uploadId}`
             : "http://localhost:8000/metrics/acuity-benchmarks";
 
-          const [dashboardResponse, acuityResponse] = await Promise.all([
+          // NEW URL for your hourly aggregates
+          const hourlyUrl = uploadId 
+            ? `http://localhost:8000/metrics/hourly-aggregates?upload_id=${uploadId}` 
+            : "http://localhost:8000/metrics/hourly-aggregates";
+
+          const [dashboardResponse, acuityResponse, hourlyResponse] = await Promise.all([
             fetch(dashboardUrl),
-            fetch(acuityUrl)
+            fetch(acuityUrl),
+            fetch(hourlyUrl)
           ]);
 
           if (!dashboardResponse.ok) {
@@ -119,6 +125,7 @@ const ViewMetrics = () => {
 
           const dashboardPayload = await dashboardResponse.json();
           const metrics = dashboardPayload.metrics ?? [];
+          const hourlyPayload = hourlyResponse.ok ? await hourlyResponse.json() : { volume_chart: [] };
 
           let acuityPayload = { acuity_benchmarks: [] };
           if (acuityResponse.ok) {
@@ -204,10 +211,13 @@ const ViewMetrics = () => {
           (acuityPayload.acuity_benchmarks ?? []).length
             ? acuityPayload.acuity_benchmarks
             : mockData.acuity_benchmarks,
-        _meta: {
-          uploadId: dashboardPayload.upload_id
-        }
-        });
+          _meta: {
+            uploadId: dashboardPayload.upload_id
+          },
+          volume_chart: hourlyPayload.volume_chart.length > 0 
+        ? hourlyPayload.volume_chart 
+        : mockData.volume_chart
+          });
       } catch (error) {
         console.error(error);
         setDashboardData(mockData);

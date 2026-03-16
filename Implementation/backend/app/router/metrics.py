@@ -32,3 +32,21 @@ def get_acuity_benchmarks(
         raise HTTPException(status_code=404, detail="No completed upload found.")
 
     return service.build_acuity_benchmarks(effective_id)
+
+@router.get("/hourly-aggregates")
+async def get_hourly_aggregates(
+    upload_id: Optional[int] = Query(None)
+):
+    # Determine which ID to use
+    effective_id = upload_id or service.get_latest_upload_id()
+    
+    if not effective_id:
+        raise HTTPException(status_code=404, detail="No valid data period found.")
+
+    # Call the new service function
+    volume_data = service.get_hourly_patient_density(effective_id)
+    
+    return {
+        "upload_id": effective_id,
+        "volume_chart": volume_data
+    }
