@@ -2,14 +2,26 @@ import pandas as pd
 # 1. change the file location
 input_csv  = "D:/preproject_chunk/input/mimicel.csv"
 output_dir = "D:/preproject_chunk/output/"
-target_rows = 2000
-max_files = 10
+# target_rows = 2000
+# max_files = 10
+target_rows = 10**90
+max_files = 1
+start_year = 2110
+end_year = 2115
+
 
 def simple_export_chunks():
     # Load and Sort 
     print("Loading data...")
     df = pd.read_csv(input_csv)
-    
+
+    # Convert timestamps to datetime and filter by year range and month (January)
+    df['timestamps'] = pd.to_datetime(df['timestamps'])
+    # Convert timestamps to datetime and filter by month (January)
+    # df = df[(df['timestamps'].dt.month == 1)]
+    # Convert timestamps to datetime and filter by year range (2110-2115)
+    df = df[(df['timestamps'].dt.year >= start_year) & (df['timestamps'].dt.year <= end_year)]
+        
     # Sort and RESET INDEX to fix the iloc error
     df = df.sort_values(['stay_id', 'timestamps']).reset_index(drop=True)
     
