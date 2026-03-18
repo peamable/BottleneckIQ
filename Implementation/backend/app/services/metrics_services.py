@@ -133,3 +133,65 @@ def get_hourly_patient_density(upload_id: int) -> List[Dict[str, Any]]:
             } 
             for r in rows
         ]
+    
+
+def get_performance_trend_data(lookback: int = 10) -> List[Dict[str, Any]]:
+    """
+    Fetches historical metrics and labels them with the actual Upload Date and ID.
+    Example Label: 'Oct 12 (ID: 42)'
+    """
+    
+    # 1. Get the last N successful uploads with their real-world creation date
+    history_query = text("""
+        SELECT upload_id, upload_timestamp
+        FROM upload_history
+        WHERE status = 'completed'
+        ORDER BY upload_id DESC
+        LIMIT :limit
+    """)
+
+    # 2. Fetch the metrics for these specific uploads
+    metrics_query = text("""
+        SELECT 
+            upload_id, 
+            metric_name, 
+            avg_value as p50, 
+            p75_value as p75, 
+            p90_value as p90
+        FROM metrics
+        WHERE upload_id IN :u_ids
+    """)
+
+    with engine.connect() as conn:
+        history_rows = conn.execute(history_query, {"limit": lookback}).mappings().all()
+        if not history_rows:
+            return []
+
+        u_ids = [r["upload_id"] for r in history_rows]
+        metric_rows = conn.execute(metrics_query, {"u_ids": u_ids}).mappings().all()
+
+    trend_data = []
+    
+    # Sort chronologically for the chart (Left = Oldest, Right = Newest)
+    for upload in sorted(history_rows, key=lambda x: x["upload_id"]):
+        u_id = upload["upload_id"]
+        
+        # Format the date nicely: e.g., "Oct 12"
+        date_label = upload["upload_timestamp"].strftime("%b %d")
+        
+        entry = {
+            "period_start": f"{date_label} (ID: {u_id})",
+            "upload_id": u_id
+        }
+
+        # Filter and pivot metrics
+        this_upload_metrics = [m for m in metric_rows if m["upload_id"] == u_id]
+        for m in this_upload_metrics:
+            name = m["metric_name"]
+            entry[f"{name}_p50"] = m["p50"]
+            entry[f"{name}_p75"] = m["p75"]
+            entry[f"{name}_p90"] = m["p90"]
+
+        trend_data.append(entry)
+
+    return trend_data

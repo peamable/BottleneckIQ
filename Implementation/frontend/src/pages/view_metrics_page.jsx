@@ -42,7 +42,7 @@ const ViewMetrics = () => {
   //for the line chart
   const [percentileLevel, setPercentileLevel] = useState('p90'); // Default to P90
   const trendStageMap = {
-    total_stay: "total_stay",
+    total_stay: "total_ed_stay_time",
     time_to_triage: "time_to_triage",
     time_to_vital: "time_to_vital",
     time_to_medrecon: "time_to_medrecon",
@@ -107,10 +107,13 @@ const ViewMetrics = () => {
             ? `http://localhost:8000/metrics/hourly-aggregates?upload_id=${uploadId}` 
             : "http://localhost:8000/metrics/hourly-aggregates";
 
-          const [dashboardResponse, acuityResponse, hourlyResponse] = await Promise.all([
+          const trendUrl = `http://localhost:8000/metrics/performance-trend?lookback=${lookback}`;
+
+          const [dashboardResponse, acuityResponse, hourlyResponse, trendResponse] = await Promise.all([
             fetch(dashboardUrl),
             fetch(acuityUrl),
-            fetch(hourlyUrl)
+            fetch(hourlyUrl),
+            fetch(trendUrl)
           ]);
 
           if (!dashboardResponse.ok) {
@@ -126,6 +129,7 @@ const ViewMetrics = () => {
           const dashboardPayload = await dashboardResponse.json();
           const metrics = dashboardPayload.metrics ?? [];
           const hourlyPayload = hourlyResponse.ok ? await hourlyResponse.json() : { volume_chart: [] };
+          const trendPayload = await trendResponse.json();
 
           let acuityPayload = { acuity_benchmarks: [] };
           if (acuityResponse.ok) {
@@ -215,8 +219,14 @@ const ViewMetrics = () => {
             uploadId: dashboardPayload.upload_id
           },
           volume_chart: hourlyPayload.volume_chart.length > 0 
-        ? hourlyPayload.volume_chart 
-        : mockData.volume_chart
+          ? hourlyPayload.volume_chart 
+          : mockData.volume_chart
+          ,
+          trend_chart: trendPayload.trend_chart.length > 0
+          ? trendPayload.trend_chart
+          : mockData.trend_chart
+
+
           });
       } catch (error) {
         console.error(error);
