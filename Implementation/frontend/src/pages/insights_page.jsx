@@ -6,30 +6,38 @@ import mockData from "../insights_mock.json";
 
 
 const InsightsPage = () => {
-  const [insightsData, setInsightsData] = useState(mockData);
-  const [loading, setLoading] = useState(true);
+  const [insightsData, setInsightsData] = useState(insightsData); // change mockData to insightsData
 const [error, setError] = useState(null);
 
 useEffect(() => {
   const controller = new AbortController();
 
-  const fetchDispositionMix = async () => {
+  const fetchInsights = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8000/insights/logistics_root_cause', {
-        signal: controller.signal 
-      });
 
-      if (!response.ok) throw new Error(`Error: ${response.status}`);
+      const [logisticsRes, demographicsRes] = await Promise.all([
+        fetch('http://localhost:8000/insights/logistics_root_cause', {
+          signal: controller.signal
+        }),
+        fetch('http://localhost:8000/insights/demographics_audit', {
+          signal: controller.signal
+        })
+      ]);
+      if (!logisticsRes.ok) throw new Error(`Logistics Error: ${logisticsRes.status}`);
+      if (!demographicsRes.ok) throw new Error(`Demographics Error: ${demographicsRes.status}`);
 
-      const payload = await response.json();
-      
+      const logisticsPayload = await logisticsRes.json();
+      const demographicsPayload = await demographicsRes.json();
+
       setInsightsData(prev => ({
         ...prev,
         logistics_root_cause: {
           ...prev.logistics_root_cause,
-          disposition_mix: payload.logistics_root_cause.disposition_mix
+          disposition_mix: logisticsPayload.logistics_root_cause.disposition_mix || [],
+          top_chief_complaints: logisticsPayload.logistics_root_cause.top_chief_complaints || []
         },
+        equity_audit: demographicsPayload.equity_audit || []
       }));
     } catch (err) {
       if (err.name !== 'AbortError') {
@@ -41,7 +49,7 @@ useEffect(() => {
     }
   };
 
-  fetchDispositionMix();
+  fetchInsights();
   return () => controller.abort(); // Cleanup
 }, []);
 
@@ -156,24 +164,24 @@ useEffect(() => {
       />
     </div>
 
-    {/* Part B: Chief Complaint Delay Bar Chart */}
+    {/* Part B: Chief Complaint Average Stay Time Bar Chart */}
     <div className="chart_wrapper">
-      <h4>Delay Impact by Chief Complaint</h4>
+      <h4>Average Stay Time by Chief Complaint</h4>
       <Plot
         data={[{
           // Extracting the number from "+18m" so the bar has a length
-          x: mockData?.logistics_root_cause?.top_complaints?.map(c => parseInt(c.delay_impact)) || [],
-          y: mockData?.logistics_root_cause?.top_complaints?.map(c => c.complaint) || [],
+          x: insightsData?.logistics_root_cause?.top_chief_complaints?.map(c => c.avg_total_ed_stay_time) || [],
+          y: insightsData?.logistics_root_cause?.top_chief_complaints?.map(c => c.chiefcomplaint) || [],
           type: 'bar',
           orientation: 'h',
           marker: { color: '#6366f1' },
-          text: mockData?.top_complaints?.map(c => c.delay_impact), // Shows the "+18m" on hover
+          text: insightsData?.logistics_root_cause?.top_chief_complaints?.map(c => `${c.avg_total_ed_stay_time} min (n=${c.count}))`) || [], // Shows on hover
           hoverinfo: 'text+y'
         }]}
         layout={{
           height: 320,
           margin: { t: 20, b: 40, l: 140, r: 20 },
-          xaxis: { title: {text:'Minutes of Delay Impact', standoff:20} },
+          xaxis: { title: {text:'Average Total ED Stay Time (minutes)', standoff:20} },
           yaxis: { autorange: 'reversed' },
           paper_bgcolor: 'transparent',
           plot_bgcolor: 'transparent'
@@ -196,14 +204,14 @@ useEffect(() => {
       <h3>Demographic Flow Audit</h3>
       <Plot
         data={[{
-          x: mockData?.equity_audit?.map(e => e.variance) || [],
-          y: mockData?.equity_audit?.map(e => e.group) || [],
+          x: insightsData?.equity_audit?.map(e => e.variance) || [],
+          y: insightsData?.equity_audit?.map(e => e.group) || [],
           type: 'bar',
           orientation: 'h',
           marker: {
-            color: mockData?.equity_audit?.map(e => e.variance > 15 ? '#ef4444' : '#3b82f6') 
+            color: insightsData?.equity_audit?.map(e => e.variance > 15 ? '#ef4444' : '#3b82f6') 
           },
-          text: mockData?.equity_audit?.map(e => `${e.variance}%`),
+          text: insightsData?.equity_audit?.map(e => `${e.variance}%`),
           hoverinfo: 'text+y'
         }]}
         layout={{
