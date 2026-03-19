@@ -50,3 +50,20 @@ async def get_hourly_aggregates(
         "upload_id": effective_id,
         "volume_chart": volume_data
     }
+
+@router.get("/performance-trend")
+async def get_performance_trend(
+    lookback: int = Query(10, description="Number of past uploads to include")
+):
+    """
+    Endpoint for the Line Chart.
+    Returns a list of historical metrics labeled by Upload Date and ID.
+    """
+    # Call the service we just built
+    trend_data = service.get_performance_trend_data(lookback=lookback)
+    
+    if not trend_data:
+        # Return empty list instead of 404 to keep Recharts from crashing
+        return {"trend_chart": []}
+
+    return {"trend_chart": trend_data}
