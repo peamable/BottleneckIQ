@@ -195,3 +195,36 @@ def get_performance_trend_data(lookback: int = 10) -> List[Dict[str, Any]]:
         trend_data.append(entry)
 
     return trend_data
+
+def get_dashboard_horizon(upload_id: Optional[int] = None) -> Dict[str, Any]:
+    """
+    Fetches the System Horizon (Upload Date and ID) for the dashboard header.
+    Defaults to the most recent upload if no ID is provided.
+    """
+    
+    # If no ID, find the latest one first
+    if upload_id is None:
+        upload_id = get_latest_upload_id()
+
+    if not upload_id:
+        return {"upload_id": None, "display_date": "No Data Available"}
+
+    # Grab the timestamp for this specific upload
+    query = text("""
+        SELECT upload_timestamp 
+        FROM upload_history 
+        WHERE upload_id = :u_id
+    """)
+
+    with engine.connect() as conn:
+        result = conn.execute(query, {"u_id": upload_id}).mappings().one_or_none()
+
+    if result and result["upload_timestamp"]:
+        # Format: "Feb 22, 2026 | 14:30"
+        formatted_date = result["upload_timestamp"].strftime("%b %d, %Y | %H:%M")
+        return {
+            "upload_id": upload_id,
+            "display_date": formatted_date
+        }
+
+    return {"upload_id": upload_id, "display_date": "Unknown Date"}

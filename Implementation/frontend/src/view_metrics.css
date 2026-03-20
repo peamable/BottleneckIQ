@@ -183,34 +183,34 @@
 }
 
 /* --- DATA HORIZON STYLING --- */
-.data_horizon_badge {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end; /* Aligns to the right side of the bar */
-  gap: 2px;
-}
+/* .data_horizon_badge { */
+  /* display: flex; */
+  /* flex-direction: column; */
+  /* align-items: flex-end; Aligns to the right side of the bar */
+  /* gap: 2px; */
+/* } */
 
-.horizon_label {
-  font-size: 0.7rem;
-  color: #64748b;
-  text-transform: uppercase;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
+/* .horizon_label { */
+  /* font-size: 0.7rem; */
+  /* color: #64748b; */
+  /* text-transform: uppercase; */
+  /* font-weight: 700; */
+  /* letter-spacing: 0.5px; */
+/* } */
 
-.horizon_value {
-  font-size: 0.85rem;
-  color: #1e293b;
-  font-weight: 600;
-  background: #e2e8f0;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
+/* .horizon_value { */
+  /* font-size: 0.85rem; */
+  /* color: #1e293b; */
+  /* font-weight: 600; */
+  /* background: #e2e8f0; */
+  /* padding: 2px 8px; */
+  /* border-radius: 4px; */
+/* } */
 
-.sync_status {
-  font-size: 0.7rem;
-  color: #10b981; /* Green for "Live/Active" */
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
+/* .sync_status { */
+  /* font-size: 0.7rem; */
+  /* color: #10b981; Green for "Live/Active" */
+  /* display: flex; */
+  /* align-items: center; */
+  /* gap: 5px; */
+/* } */
