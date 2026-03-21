@@ -14,34 +14,121 @@ def get_latest_upload_id() -> Optional[int]:
         result = conn.execute(query).mappings().first()
         return result["upload_id"] if result else None
     
+# For summary top-level metrics, we want to compare the current upload's metrics to the previous upload's metrics to calculate trends.
+def calculate_trend(current: float, previous: float) -> Dict[str, Any]:
+    """Calculates percentage change and ensures JSON-safe numbers."""
+    # SQL AVG values may come back as Decimal depending on the driver.
+    curr_val = float(current) if current is not None else 0.0
+    prev_val = float(previous) if previous is not None else 0.0
+
+    if prev_val == 0:
+        return {"value": round(curr_val, 0), "trend": 0, "direction": "stable"}
+    
+    diff = curr_val - prev_val
+    percent_change = round((abs(diff) / prev_val) * 100, 1)
+    direction = "up" if diff > 0 else "down" if diff < 0 else "stable"
+    
+    return {"value": round(curr_val, 1), "trend": int(percent_change), "direction": direction}
+
+def get_dashboard_summary(upload_id: int):
+    metrics_sql = text("""
+        SELECT 
+            AVG(total_ed_stay_time) AS total_ed_stay_time,
+            AVG(time_to_triage) AS time_to_triage,
+            AVG(time_to_vital) AS time_to_vital,
+            AVG(time_to_medrecon) AS time_to_medrecon,
+            AVG(time_to_dispen) AS time_to_dispen,
+            AVG(time_to_discharge) AS time_to_discharge
+        FROM event_log
+        WHERE upload_id = :u_id
+    """)
+
+    with engine.begin() as conn:
+        curr = conn.execute(metrics_sql, {"u_id": upload_id}).mappings().first()
+
+        prev_id = conn.execute(
+            text("SELECT MAX(upload_id) FROM event_log WHERE upload_id < :u_id"),
+            {"u_id": upload_id}
+        ).scalar()
+
+        prev = None
+        if prev_id is not None:
+            prev = conn.execute(metrics_sql, {"u_id": prev_id}).mappings().first()
+
+    if not curr:
+        return []
+
+    def calculate_trend(current, previous):
+        curr_val = float(current) if current is not None else 0.0
+        prev_val = float(previous) if previous is not None else 0.0
+
+        if prev_val == 0:
+            return {
+                "value": round(curr_val, 1),
+                "trend": 0,
+                "direction": "stable"
+            }
+
+        diff = curr_val - prev_val
+        percent_change = round((abs(diff) / prev_val) * 100, 1)
+
+        direction = "up" if diff > 0 else "down" if diff < 0 else "stable"
+
+        return {
+            "value": round(curr_val, 1),
+            "trend": percent_change,
+            "direction": direction
+        }
+
+    metric_keys = [
+        "total_ed_stay_time",
+        "time_to_triage",
+        "time_to_vital",
+        "time_to_medrecon",
+        "time_to_dispen",
+        "time_to_discharge",
+    ]
+
+    summary = []
+    for key in metric_keys:
+        trend_data = calculate_trend(curr[key], prev[key] if prev else 0)
+        summary.append({
+            "metric_name": key,
+            "avg_value": trend_data["value"],
+            "trend": trend_data["trend"],
+            "direction": trend_data["direction"]
+        })
+
+    return summary
 
 # Overall Avg Stay time per activity, and overall total stay time
-def get_metrics_data(upload_id: int, batch_id: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Fetches and normalizes metrics for a specific ID."""
-    query_str = "SELECT * FROM metrics WHERE upload_id = :upload_id"
-    params = {"upload_id": upload_id}
+# def get_metrics_data(upload_id: int, batch_id: Optional[str] = None) -> List[Dict[str, Any]]:
+#     """Fetches and normalizes metrics for a specific ID."""
+#     query_str = "SELECT * FROM metrics WHERE upload_id = :upload_id"
+#     params = {"upload_id": upload_id}
     
-    if batch_id:
-        query_str += " AND batch_id = :batch_id"
-        params["batch_id"] = batch_id
+#     if batch_id:
+#         query_str += " AND batch_id = :batch_id"
+#         params["batch_id"] = batch_id
         
-    query = text(query_str + " ORDER BY metric_name")
+#     query = text(query_str + " ORDER BY metric_name")
     
-    with engine.connect() as conn:
-        rows = conn.execute(query, params).mappings().all()
+#     with engine.connect() as conn:
+#         rows = conn.execute(query, params).mappings().all()
 
-    normalized_rows = []
-    for row in rows:
-        row_dict = dict(row)
-        # Handle the JSON string conversion safely
-        acuity_val = row_dict.get("stay_time_per_acuity")
-        if isinstance(acuity_val, str):
-            try:
-                row_dict["stay_time_per_acuity"] = json.loads(acuity_val)
-            except json.JSONDecodeError:
-                row_dict["stay_time_per_acuity"] = {}
-        normalized_rows.append(row_dict)
-    return normalized_rows
+#     normalized_rows = []
+#     for row in rows:
+#         row_dict = dict(row)
+#         # Handle the JSON string conversion safely
+#         acuity_val = row_dict.get("stay_time_per_acuity")
+#         if isinstance(acuity_val, str):
+#             try:
+#                 row_dict["stay_time_per_acuity"] = json.loads(acuity_val)
+#             except json.JSONDecodeError:
+#                 row_dict["stay_time_per_acuity"] = {}
+#         normalized_rows.append(row_dict)
+#     return normalized_rows
+
 
 # Acuity Benchmarking Reference Data
 ACUITY_REFERENCE = {

@@ -17,8 +17,8 @@ def validate_batch(batch_id: str) -> list[str]:
         if bad_ed and bad_ed > 0:
             errors.append(f"ed_stay_staging has {bad_ed} rows with NULL/empty stay_id, ed_timestamp, or activity.")
 
-        # check duplicates in staging for exact same event for stay_id,ed_timestamp,activity
-        repeated_rows = conn.execute(text("""
+        # check duplicates within current batch for exact same event for stay_id,ed_timestamp,activity
+        repeated_rows_in_batch = conn.execute(text("""
             SELECT COUNT(*) FROM (
               SELECT stay_id, activity, ed_timestamp, COUNT(*) c
               FROM ed_stay_staging
@@ -28,9 +28,10 @@ def validate_batch(batch_id: str) -> list[str]:
             ) t
         """), {"b": batch_id}).scalar()
 
-        if repeated_rows and repeated_rows > 0:
-            errors.append(f"ed_stay_staging has {repeated_rows} duplicate event keys (stay_id, ed_timestamp, activity).")
+        if repeated_rows_in_batch and repeated_rows_in_batch > 0:
+            errors.append(f"ed_stay_staging has {repeated_rows_in_batch} duplicate event keys (stay_id, ed_timestamp, activity) within this batch.")
 
+        
         # check null for gender, race, arrival_transport, disposition and chiefcomplaint in stay_info_staging
         bad_stay_info_nulls = conn.execute(text("""
             SELECT COUNT(*) FROM stay_info_staging

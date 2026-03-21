@@ -4,27 +4,45 @@ from app.services import metrics_services as service
 
 router = APIRouter(prefix="/metrics", tags=["metrics"])
 
+# @router.get("/dashboard")
+# async def get_dashboard_data(
+#     upload_id: Optional[int] = Query(None)
+# ):
+#     # Use service to find ID if not provided
+#     effective_id = upload_id or service.get_latest_upload_id()
+
+#     if effective_id is None:
+#         # Return a 200 with empty data instead of a 404/422 
+#         # to keep the frontend from crashing
+#         return {"upload_id": None, "metrics": [], "message": "No data available"}
+        
+#     rows = service.get_metrics_data(effective_id)
+    
+#     return {
+#         "upload_id": effective_id,
+#         "metrics": rows
+#     }
 @router.get("/dashboard-horizon")
 async def get_horizon(upload_id: Optional[int] = Query(None)):
     return service.get_dashboard_horizon(upload_id)
 
 @router.get("/dashboard")
-async def get_dashboard_data(
+async def get_summary(
     upload_id: Optional[int] = Query(None)
 ):
-    # Use service to find ID if not provided
-    effective_id = upload_id or service.get_latest_upload_id()
 
+    effective_id = upload_id or service.get_latest_upload_id()
+    
     if effective_id is None:
-        # Return a 200 with empty data instead of a 404/422 
-        # to keep the frontend from crashing
-        return {"upload_id": None, "metrics": [], "message": "No data available"}
-        
-    rows = service.get_metrics_data(effective_id)
+         # Return a 200 with empty data instead of a 404/422 
+         # to keep the frontend from crashing
+         return {"upload_id": None, "summary": {}, "message": "No data available"}
+    
+    summary_data = service.get_dashboard_summary(effective_id)
     
     return {
         "upload_id": effective_id,
-        "metrics": rows
+        "summary": summary_data
     }
 
 @router.get("/acuity-benchmarks")

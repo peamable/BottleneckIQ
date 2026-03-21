@@ -6,8 +6,9 @@ import mockData from "../insights_mock.json";
 
 
 const InsightsPage = () => {
-  const [insightsData, setInsightsData] = useState(insightsData); // change mockData to insightsData
-const [error, setError] = useState(null);
+  const [insightsData, setInsightsData] = useState(mockData); // Initially set to mock data for development
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
 useEffect(() => {
   const controller = new AbortController();
@@ -16,19 +17,24 @@ useEffect(() => {
     try {
       setLoading(true);
 
-      const [logisticsRes, demographicsRes] = await Promise.all([
+      const [logisticsRes, demographicsRes, bottlenecksRes] = await Promise.all([
         fetch('http://localhost:8000/insights/logistics_root_cause', {
           signal: controller.signal
         }),
         fetch('http://localhost:8000/insights/demographics_audit', {
           signal: controller.signal
+        }),
+        fetch('http://localhost:8000/insights/chief_complaint_bottlenecks', {
+          signal: controller.signal
         })
       ]);
       if (!logisticsRes.ok) throw new Error(`Logistics Error: ${logisticsRes.status}`);
       if (!demographicsRes.ok) throw new Error(`Demographics Error: ${demographicsRes.status}`);
+      if (!bottlenecksRes.ok) throw new Error(`Chief Complaint Bottlenecks Error: ${bottlenecksRes.status}`);
 
       const logisticsPayload = await logisticsRes.json();
       const demographicsPayload = await demographicsRes.json();
+      const bottlenecksPayload = await bottlenecksRes.json();
 
       setInsightsData(prev => ({
         ...prev,
@@ -37,7 +43,8 @@ useEffect(() => {
           disposition_mix: logisticsPayload.logistics_root_cause.disposition_mix || [],
           top_chief_complaints: logisticsPayload.logistics_root_cause.top_chief_complaints || []
         },
-        equity_audit: demographicsPayload.equity_audit || []
+        equity_audit: demographicsPayload.equity_audit || [],
+        chief_complaint_bottlenecks: bottlenecksPayload.chief_complaint_bottlenecks || []
       }));
     } catch (err) {
       if (err.name !== 'AbortError') {
@@ -164,24 +171,29 @@ useEffect(() => {
       />
     </div>
 
-    {/* Part B: Chief Complaint Average Stay Time Bar Chart */}
+    {/* Part B: Chief Complaint Bottleneck Bar Chart */}
     <div className="chart_wrapper">
-      <h4>Average Stay Time by Chief Complaint</h4>
+      <h4>Chief Complaint Bottleneck Categories</h4>
       <Plot
         data={[{
-          // Extracting the number from "+18m" so the bar has a length
-          x: insightsData?.logistics_root_cause?.top_chief_complaints?.map(c => c.avg_total_ed_stay_time) || [],
-          y: insightsData?.logistics_root_cause?.top_chief_complaints?.map(c => c.chiefcomplaint) || [],
+          x: insightsData?.chief_complaint_bottlenecks?.map(c => c.value) || [],
+          y: insightsData?.chief_complaint_bottlenecks?.map(c => c.label.replaceAll('_', ' ')) || [],
           type: 'bar',
           orientation: 'h',
           marker: { color: '#6366f1' },
-          text: insightsData?.logistics_root_cause?.top_chief_complaints?.map(c => `${c.avg_total_ed_stay_time} min (n=${c.count}))`) || [], // Shows on hover
-          hoverinfo: 'text+y'
+          text: insightsData?.chief_complaint_bottlenecks?.map(c => `${c.count} patients`) || [],
+          customdata: insightsData?.chief_complaint_bottlenecks?.map(c => [c.avg_los, c.transfer_pct]) || [],
+          hovertemplate:
+            'Category: %{y}<br>' +
+            'Total bed-hours: %{x}<br>' +
+            'Patients: %{text}<br>' +
+            'Avg LOS: %{customdata[0]} hours<br>' +
+            'Transfer rate: %{customdata[1]}%<extra></extra>',
         }]}
         layout={{
           height: 320,
           margin: { t: 20, b: 40, l: 140, r: 20 },
-          xaxis: { title: {text:'Average Total ED Stay Time (minutes)', standoff:20} },
+          xaxis: { title: { text: 'Total Bed-Hours', standoff: 20 } },
           yaxis: { autorange: 'reversed' },
           paper_bgcolor: 'transparent',
           plot_bgcolor: 'transparent'
