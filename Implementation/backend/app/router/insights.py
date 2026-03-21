@@ -66,7 +66,6 @@ async def get_chief_complaint_counts( upload_id: Optional[int] = Query(None)
         "chief_complaint_counts": service.get_chief_complaint_counts(effective_id)
     }
 
-
 @router.get("/chief_complaint_bottlenecks")
 async def get_chief_complaint_bottlenecks(upload_id: Optional[int] = Query(None)):
     effective_id = upload_id or service.get_latest_upload_id()
@@ -82,4 +81,3 @@ async def get_chief_complaint_bottlenecks(upload_id: Optional[int] = Query(None)
         "upload_id": effective_id,
         "chief_complaint_bottlenecks": service.get_chief_complaint_bottleneck_insights(effective_id)
     }
-   

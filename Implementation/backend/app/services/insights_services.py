@@ -201,7 +201,7 @@ def get_chief_complaint_bottleneck_insights(upload_id: int):
         SELECT
             s.stay_id,
             s.chiefcomplaint,
-            MAX(e.total_ed_stay_time) / 3600.0 AS los_hours
+            MAX(e.total_ed_stay_time) / 60 AS los_hours
         FROM stay_info s
         JOIN event_log e
             ON s.stay_id = e.stay_id
