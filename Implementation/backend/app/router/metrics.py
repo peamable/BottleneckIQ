@@ -22,6 +22,9 @@ router = APIRouter(prefix="/metrics", tags=["metrics"])
 #         "upload_id": effective_id,
 #         "metrics": rows
 #     }
+@router.get("/dashboard-horizon")
+async def get_horizon(upload_id: Optional[int] = Query(None)):
+    return service.get_dashboard_horizon(upload_id)
 
 @router.get("/dashboard")
 async def get_summary(

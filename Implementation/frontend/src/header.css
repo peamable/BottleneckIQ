@@ -61,3 +61,47 @@
   border-left: 1px solid #334155;
   padding-left: 20px;
 }
+
+/* --- DATA HORIZON STYLING (HEADER VERSION) --- */
+.data_horizon_badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center it horizontally in the header */
+  justify-content: center;
+  gap: 4px; /* Slightly more space */
+}
+
+.horizon_label {
+  font-size: 0.75rem; /* Tiny bit larger */
+  color: #94a3b8; /* Lighter gray to pop against the dark header */
+  text-transform: uppercase;
+  font-weight: 800; /* Extra bold for "label" feel */
+  letter-spacing: 0.8px;
+}
+
+.horizon_value {
+  font-size: 1rem; /* Much larger for readability */
+  color: #f8fafc; /* White/Off-white text */
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.1); /* Semi-transparent dark background */
+  padding: 4px 12px; /* More "pill" like padding */
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border for depth */
+}
+
+.sync_status {
+  font-size: 0.75rem;
+  color: #34d399; /* Bright emerald green */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.live_dot {
+  width: 8px;
+  height: 8px;
+  background-color: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #10b981; /* Adds a "glow" effect */
+}
