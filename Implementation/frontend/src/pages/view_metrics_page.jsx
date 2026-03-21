@@ -334,14 +334,14 @@ const ViewMetrics = () => {
   </div>
 
   {/* THE DATA WINDOW & SYNC STATUS */}
-  <div className="data_horizon_badge">
+  {/* <div className="data_horizon_badge">
     <span className="horizon_label">Operational Window</span>
     <span className="horizon_value">Feb 22, 2026 | 08:00 - 14:00</span>
     <div className="sync_status">
       <span className="live_dot"></span> 
       Last Sync: just now
     </div>
-</div>
+</div> */}
 </div>
 
         {/* 3. INTERACTIVE PERFORMANCE TREND (The "History") */}
