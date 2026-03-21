@@ -1,5 +1,15 @@
+import os
+import sys
+import re
 from typing import Optional
+
+import pandas as pd
 from sqlalchemy import text
+
+if __name__ == "__main__":
+    # Allow direct execution via `python app/services/insights_services.py`.
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 from app.core.database import engine
 
 def get_latest_upload_id() -> Optional[int]:
@@ -100,6 +110,33 @@ def get_top_chief_complaints(upload_id: int) -> dict:
 
     return top_chief_complaints
 
+# chief complaint count bar chart visualization
+def get_chief_complaint_counts(upload_id: int) -> list[dict]:
+    query = text("""
+        SELECT
+            chiefcomplaint,
+            COUNT(*) AS count
+        FROM stay_info
+        WHERE upload_id = :upload_id
+          AND chiefcomplaint IS NOT NULL
+          AND chiefcomplaint <> ''
+        GROUP BY chiefcomplaint
+        ORDER BY count DESC
+    """)
+
+    with engine.connect() as conn:
+        rows = conn.execute(query, {"upload_id": upload_id}).mappings().all()
+
+    chief_complaint_counts = [
+        {
+            "chiefcomplaint": r["chiefcomplaint"],
+            "count": r["count"]
+        }
+        for r in rows
+    ]
+
+    return chief_complaint_counts
+
 # Demographics flow audit bar chart visualization
 
 def get_equity_audit(upload_id: int) -> list[dict]:
@@ -158,3 +195,159 @@ def get_equity_audit(upload_id: int) -> list[dict]:
     ]
 
     return equity_audit
+
+def get_chief_complaint_bottleneck_insights(upload_id: int):
+    query = text("""
+        SELECT
+            s.stay_id,
+            s.chiefcomplaint,
+            MAX(e.total_ed_stay_time) / 3600.0 AS los_hours
+        FROM stay_info s
+        JOIN event_log e
+            ON s.stay_id = e.stay_id
+        WHERE s.upload_id = :u_id
+          AND s.chiefcomplaint IS NOT NULL
+          AND s.chiefcomplaint <> ''
+          AND e.total_ed_stay_time IS NOT NULL
+        GROUP BY s.stay_id, s.chiefcomplaint
+    """)
+
+    with engine.connect() as conn:
+        df = pd.read_sql(query, conn, params={"u_id": upload_id})
+
+    if df.empty:
+        return []
+
+    draft_operational_keywords = {
+        "Long_Stay_Boarders": [
+            "alcohol intoxication", "altered mental status", "mental status",
+            "psych", "si", "detox", "behavioral", "depression", "clearance",
+        ],
+        "High_Nursing_Intensity": [
+            "chest pain", "dyspnea", "shortness of breath",
+            "tachycardia", "hypotension", "palpitations", "allergic reaction",
+        ],
+        "Trauma_MVC_or_Injury": [
+            "mvc", "motor vehicle crash", "motor vehicle collision",
+            "status post fall", "fall", "injury",
+        ],
+        "High_Imaging_Demand": [
+            "abdominal pain", "flank pain", "quadrant abdominal pain",
+            "lower abdominal pain", "right lower quadrant",
+            "left lower quadrant", "right upper quadrant",
+            "upper quadrant abdominal",
+        ],
+        "Neuro_or_Syncope": [
+            "headache", "syncope", "seizure", "stroke",
+            "dizziness", "numbness", "weakness",
+        ],
+        "MSK_Back_or_Extremity_Pain": [
+            "back pain", "lower back pain", "neck pain", "shoulder pain",
+            "leg pain", "arm pain", "hip pain", "knee pain",
+            "ankle pain", "finger pain", "hand pain", "wrist pain",
+            "foot pain", "toe pain",
+        ],
+        "GU_Urinary": [
+            "dysuria", "uti", "urinary frequency", "hematuria",
+        ],
+        "Skin_Soft_Tissue": [
+            "cellulitis", "abscess", "wound infection", "skin infection",
+        ],
+        "GI_Bleeding": [
+            "bright red blood per rectum", "brbpr", "gi bleed",
+            "rectal bleed", "bloody stool", "melena",
+        ],
+        "Viral_Respiratory_ILI": [
+            "influenza like illness", "ili", "viral syndrome", "flu like illness",
+        ],
+        "Quick_Turnaround": [
+            "sore throat", "wound eval", "ear pain", "rash",
+            "dental pain", "tooth pain", "laceration", "refill",
+        ],
+        "Workup_Required": [
+            "abnormal labs", "fever", "cough", "n v", "n v d",
+        ],
+        "Evaluation_or_Followup": [
+            "for eval", "re eval", "recheck", "follow up",
+        ],
+        "Abnormal_Test_or_Outside_Result": [
+            "abnormal mri", "abnormal ct", "abnormal xray", "abnormal ultrasound",
+        ],
+    }
+
+    compiled_patterns = {
+        group: re.compile(
+            r"\b(" + "|".join(re.escape(k) for k in keywords) + r")\b"
+        )
+        for group, keywords in draft_operational_keywords.items()
+    }
+
+    def normalize_complaint(text):
+        text = str(text).lower().strip()
+        replacements = {
+            r"\bh/a\b": "headache",
+            r"\bsob\b": "shortness of breath",
+            r"\betoh\b": "alcohol intoxication",
+            r"\bams\b": "altered mental status",
+            r"\babd\b": "abdominal",
+            r"\bs/p\b": "status post",
+            r"\bcva\b": "stroke",
+            r"\bili\b": "influenza like illness",
+            r"\bbrbpr\b": "bright red blood per rectum",
+            r"\blac\b": "laceration",
+        }
+        for pat, repl in replacements.items():
+            text = re.sub(pat, repl, text)
+
+        text = re.sub(r"[/,;:+()\-]+", " ", text)
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
+
+    def map_to_op_group(text):
+        text = normalize_complaint(text)
+        for group, pattern in compiled_patterns.items():
+            if pattern.search(text):
+                return group
+        return "Other/Misc"
+
+    def has_transfer_flag(text):
+        text = normalize_complaint(text)
+        return int(bool(re.search(r"\btransfer\b", text)))
+
+    df["chiefcomplaint_clean"] = df["chiefcomplaint"].apply(normalize_complaint)
+    df["op_group"] = df["chiefcomplaint"].apply(map_to_op_group)
+    df["is_transfer"] = df["chiefcomplaint"].apply(has_transfer_flag)
+
+    stats = (
+        df.groupby("op_group")
+        .agg(
+            patient_count=("op_group", "count"),
+            avg_los=("los_hours", "mean"),
+            total_bed_hours=("los_hours", "sum"),
+            transfer_count=("is_transfer", "sum"),
+        )
+        .reset_index()
+        .sort_values(by="total_bed_hours", ascending=False)
+    )
+
+    stats["transfer_pct"] = (
+        stats["transfer_count"] / stats["patient_count"] * 100
+    ).round(2)
+
+    print(f"\n--- OPERATIONAL BOTTLENECKS (ID: {upload_id}) ---")
+    print(stats[[
+        "op_group", "patient_count", "transfer_count",
+        "transfer_pct", "total_bed_hours"
+    ]].head(10))
+
+    return [
+        {
+            "label": row["op_group"],
+            "value": round(row["total_bed_hours"], 2),
+            "avg_los": round(row["avg_los"], 2),
+            "count": int(row["patient_count"]),
+            "transfer_count": int(row["transfer_count"]),
+            "transfer_pct": float(row["transfer_pct"]),
+        }
+        for _, row in stats.iterrows()
+    ]
