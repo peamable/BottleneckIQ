@@ -129,6 +129,13 @@ def process_batch(
 #     if batch_id is None:
 #         batch_id = f"batch_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
+    if df_stay_info is None or df_stay_info.empty:
+        return {
+            "ok": False,
+            "errors": ["stay_info dataframe is empty after cleaning."],
+            "batch_id": batch_id
+        }
+
     load_to_staging(df_ed_stay, df_stay_info, batch_id, upload_id=upload_id)
 
     errors = validate_batch(batch_id)
@@ -143,6 +150,13 @@ def process_batch(
             "errors": [f"Final insert failed: {str(e)}"],
             "batch_id": batch_id
         }
+    if stats["ed_stay_inserted"] > 0 and stats["stay_info_affected"] == 0:
+        return {
+            "ok": False,
+            "errors": ["Final insert incomplete: ed_stay inserted but stay_info not inserted."],
+             "batch_id": batch_id
+        }
+    
 
     if cleanup:
         cleanup_staging(batch_id)

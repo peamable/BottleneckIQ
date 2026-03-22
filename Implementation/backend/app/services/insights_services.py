@@ -1,6 +1,7 @@
 import os
 import sys
 import re
+import math
 from typing import Optional
 
 import pandas as pd
@@ -351,3 +352,137 @@ def get_chief_complaint_bottleneck_insights(upload_id: int):
         }
         for _, row in stats.iterrows()
     ]
+
+# Volume vs Efficiency correlation scatter plot visualization
+def get_volume_efficiency_correlation():
+    sql = text("""
+        SELECT
+            u.upload_id,
+            m.p90_value,
+            COUNT(DISTINCT e.stay_id) AS patient_volume
+        FROM upload_history u
+        JOIN metrics m
+            ON u.upload_id = m.upload_id
+        LEFT JOIN event_log e
+            ON u.upload_id = e.upload_id
+        where metric_name = 'total_ed_stay_time'
+        GROUP BY u.upload_id, m.p90_value
+        ORDER BY u.upload_id;
+    """)
+
+    with engine.begin() as conn:
+        rows = conn.execute(sql).mappings().all()
+
+    return {
+        "correlation_chart": [
+            {
+                "upload_id": row["upload_id"],
+                "patient_volume": int(row["patient_volume"]),
+                "p90_wait_time": float(row["p90_value"])
+            }
+            for row in rows
+        ]
+    }
+# disposition breakdown by milestone bar chart visualization
+def get_disposition_milestone_breakdown(upload_id: int):
+    query = text("""
+        SELECT 
+            si.disposition,
+            AVG(e.time_to_vital) AS avg_vital,
+            AVG(e.time_to_medrecon) AS avg_medrecon,
+            AVG(e.time_to_dispen) AS avg_dispen,
+            AVG(e.time_to_discharge) AS avg_discharge
+        FROM event_log e
+        JOIN stay_info si
+          ON e.stay_id = si.stay_id
+         AND e.upload_id = si.upload_id
+        WHERE e.upload_id = :u_id
+          AND si.disposition IN ('Admitted', 'Home')
+        GROUP BY si.disposition
+    """)
+
+    with engine.begin() as conn:
+        rows = conn.execute(query, {"u_id": upload_id}).mappings().all()
+
+    def safe_float(value):
+        if value is None:
+            return None
+        value = float(value)
+        return None if math.isnan(value) else value
+
+    result = {
+        "upload_id": upload_id,
+        "disposition_milestone_analysis": {
+            "admitted": {
+                "avg_vital": None,
+                "avg_medrecon": None,
+                "avg_dispen": None,
+                "avg_discharge": None
+            },
+            "home": {
+                "avg_vital": None,
+                "avg_medrecon": None,
+                "avg_dispen": None,
+                "avg_discharge": None
+            }
+        }
+    }
+
+    for row in rows:
+        disposition = str(row["disposition"]).strip().lower()
+        if disposition in result["disposition_milestone_analysis"]:
+            result["disposition_milestone_analysis"][disposition] = {
+                "avg_vital": safe_float(row["avg_vital"]),
+                "avg_medrecon": safe_float(row["avg_medrecon"]),
+                "avg_dispen": safe_float(row["avg_dispen"]),
+                "avg_discharge": safe_float(row["avg_discharge"])
+            }
+
+    return result
+
+# acuity level milestone bar chart visualization
+def get_acuity_level_breakdown(upload_id: int):
+    query = text("""
+        SELECT 
+            si.scale_level,
+            AVG(e.time_to_triage) AS avg_triage,
+            AVG(e.time_to_vital) AS avg_vital,
+            AVG(e.time_to_medrecon) AS avg_medrecon,
+            AVG(e.time_to_dispen) AS avg_dispen,
+            AVG(e.time_to_discharge) AS avg_discharge,
+            AVG(e.total_ed_stay_time) AS avg_total_stay
+        FROM event_log e
+        JOIN stay_info si
+          ON e.stay_id = si.stay_id
+         AND e.upload_id = si.upload_id
+        WHERE e.upload_id = :u_id
+          AND si.scale_level IS NOT NULL
+        GROUP BY si.scale_level
+        ORDER BY si.scale_level
+    """)
+
+    with engine.begin() as conn:
+        rows = conn.execute(query, {"u_id": upload_id}).mappings().all()
+
+    def safe_float(value):
+        if value is None:
+            return None
+        value = float(value)
+        return None if math.isnan(value) else value
+
+    return {
+        "upload_id": upload_id,
+        "acuity_level_analysis": [
+            {
+                "scale_level": int(row["scale_level"]),
+                "avg_triage": safe_float(row["avg_triage"]),
+                "avg_vital": safe_float(row["avg_vital"]),
+                "avg_medrecon": safe_float(row["avg_medrecon"]),
+                "avg_dispen": safe_float(row["avg_dispen"]),
+                "avg_discharge": safe_float(row["avg_discharge"]),
+                "avg_total_stay": safe_float(row["avg_total_stay"]),
+            }
+            for row in rows
+            if row["scale_level"] is not None
+        ]
+    }

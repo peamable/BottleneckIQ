@@ -81,3 +81,33 @@ async def get_chief_complaint_bottlenecks(upload_id: Optional[int] = Query(None)
         "upload_id": effective_id,
         "chief_complaint_bottlenecks": service.get_chief_complaint_bottleneck_insights(effective_id)
     }
+
+@router.get("/volume-efficiency-correlation")
+async def get_volume_efficiency_correlation():
+    return service.get_volume_efficiency_correlation()
+
+@router.get("/disposition_milestone_analysis")
+async def get_disposition_milestone_analysis(upload_id: Optional[int] = Query(None)):
+    effective_id = upload_id or service.get_latest_upload_id()
+
+    if effective_id is None:
+        return {
+            "upload_id": None,
+            "disposition_milestone_analysis": [],
+            "message": "No data available"
+        }
+
+    return service.get_disposition_milestone_breakdown(effective_id)
+
+@router.get('/acuity_level_analysis')
+async def get_acuity_level_analysis(upload_id: Optional[int] = Query(None)):
+    effective_id = upload_id or service.get_latest_upload_id()
+
+    if effective_id is None:
+        return {
+            "upload_id": None,
+            "acuity_level_analysis": [],
+            "message": "No data available"
+        }
+
+    return service.get_acuity_level_breakdown(effective_id)

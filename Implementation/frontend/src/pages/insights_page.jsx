@@ -3,7 +3,10 @@ import Plot from 'react-plotly.js'; // You'll need to install this
 import BottleneckBanner from '../components/bottleneck_banner';
 import '../insights.css';
 import mockData from "../insights_mock.json";
-
+import { 
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, Legend, ReferenceLine 
+} from 'recharts';
 
 const InsightsPage = () => {
   const [insightsData, setInsightsData] = useState(mockData); // Initially set to mock data for development
@@ -17,7 +20,7 @@ useEffect(() => {
     try {
       setLoading(true);
 
-      const [logisticsRes, demographicsRes, bottlenecksRes] = await Promise.all([
+      const [logisticsRes, demographicsRes, bottlenecksRes, volumeEfficiencyRes, dispositionsRes, acuityRes] = await Promise.all([
         fetch('http://localhost:8000/insights/logistics_root_cause', {
           signal: controller.signal
         }),
@@ -26,15 +29,31 @@ useEffect(() => {
         }),
         fetch('http://localhost:8000/insights/chief_complaint_bottlenecks', {
           signal: controller.signal
+        }),
+        fetch('http://localhost:8000/insights/volume-efficiency-correlation', {
+          signal: controller.signal
+        }),
+        fetch('http://localhost:8000/insights/disposition_milestone_analysis', {
+          signal: controller.signal
+        }),
+        fetch('http://localhost:8000/insights/acuity_level_analysis', {
+          signal: controller.signal
         })
       ]);
       if (!logisticsRes.ok) throw new Error(`Logistics Error: ${logisticsRes.status}`);
       if (!demographicsRes.ok) throw new Error(`Demographics Error: ${demographicsRes.status}`);
       if (!bottlenecksRes.ok) throw new Error(`Chief Complaint Bottlenecks Error: ${bottlenecksRes.status}`);
+      if (!volumeEfficiencyRes.ok) throw new Error(`Volume-Efficiency Correlation Error: ${volumeEfficiencyRes.status}`);
+      if (!dispositionsRes.ok) throw new Error(`Disposition Comparison Error: ${dispositionsRes.status}`);
+      if (!acuityRes.ok) throw new Error(`Acuity Level Analysis Error: ${acuityRes.status}`);
+
 
       const logisticsPayload = await logisticsRes.json();
       const demographicsPayload = await demographicsRes.json();
       const bottlenecksPayload = await bottlenecksRes.json();
+      const volumeEfficiencyPayload = await volumeEfficiencyRes.json();
+      const dispositionsPayload = await dispositionsRes.json();
+      const acuityPayload = await acuityRes.json();
 
       setInsightsData(prev => ({
         ...prev,
@@ -44,7 +63,10 @@ useEffect(() => {
           top_chief_complaints: logisticsPayload.logistics_root_cause.top_chief_complaints || []
         },
         equity_audit: demographicsPayload.equity_audit || [],
-        chief_complaint_bottlenecks: bottlenecksPayload.chief_complaint_bottlenecks || []
+        chief_complaint_bottlenecks: bottlenecksPayload.chief_complaint_bottlenecks || [],
+        efficiency_stress_test: volumeEfficiencyPayload.correlation_chart || [],
+        disposition_chart: dispositionsPayload.disposition_milestone_analysis || [],
+        acuity_chart: acuityPayload.acuity_level_analysis || []
       }));
     } catch (err) {
       if (err.name !== 'AbortError') {
@@ -209,85 +231,257 @@ useEffect(() => {
 
       {/* SECTION 4: EQUITY & VOLUME STRESS TEST */}
       <section className="insight_block bottom_audit">
-       <div className="audit_grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-    
-    {/* Part A: Demographic Flow Audit */}
-    <div className="equity_audit">
-      <h3>Demographic Flow Audit</h3>
-      <Plot
-        data={[{
-          x: insightsData?.equity_audit?.map(e => e.variance) || [],
-          y: insightsData?.equity_audit?.map(e => e.group) || [],
-          type: 'bar',
-          orientation: 'h',
-          marker: {
-            color: insightsData?.equity_audit?.map(e => e.variance > 15 ? '#ef4444' : '#3b82f6') 
-          },
-          text: insightsData?.equity_audit?.map(e => `${e.variance}%`),
-          hoverinfo: 'text+y'
-        }]}
-        layout={{
-          height: 350,
-          margin: { t: 20, b: 80, l: 180, r: 20 },
-          xaxis: { title: {text: '% Variance from Mean Wait', zeroline: true, standoff:20} },
-          paper_bgcolor: 'transparent',
-          plot_bgcolor: 'transparent'
-        }}
-        useResizeHandler={true}
-        style={{ width: '100%' }}
-      />
-    </div>
+        <div
+          className="audit_grid"
+          style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}
+        >
+          <div className="equity_audit">
+            <h3>Demographic Flow Audit</h3>
+            <Plot
+              data={[{
+                x: insightsData?.equity_audit?.map(e => e.variance) || [],
+                y: insightsData?.equity_audit?.map(e => e.group) || [],
+                type: 'bar',
+                orientation: 'h',
+                marker: {
+                  color: insightsData?.equity_audit?.map(e => e.variance > 15 ? '#ef4444' : '#3b82f6')
+                },
+                text: insightsData?.equity_audit?.map(e => `${e.variance}%`),
+                hoverinfo: 'text+y'
+              }]}
+              layout={{
+                height: 350,
+                margin: { t: 20, b: 80, l: 180, r: 20 },
+                xaxis: { title: { text: '% Variance from Mean Wait', zeroline: true, standoff: 20 } },
+                paper_bgcolor: 'transparent',
+                plot_bgcolor: 'transparent'
+              }}
+              useResizeHandler={true}
+              style={{ width: '100%' }}
+            />
+          </div>
 
-    {/* Part B: Efficiency vs. Volume Correlation (The Stress Test) */}
-    <div className="volume_stress_test">
-      <h3>Efficiency vs. Volume Correlation</h3>
-      <Plot
-        data={[
-          {
-            x: mockData?.efficiency_stress_test?.map(s => s.volume) || [],
-            y: mockData?.efficiency_stress_test?.map(s => s.p90_wait) || [],
-            mode: 'markers',
-            type: 'scatter',
-            name: 'Historical Data',
-            marker: { color: '#6366f1', size: 10 }
-          },
-          {
-            // Simple regression line logic
-            x: [12, 62],
-            y: [35, 275],
-            mode: 'lines',
-            type: 'scatter',
-            name: 'Trend Line',
-            line: { color: '#ef4444', dash: 'dot' }
-          }
-        ]}
-        layout={{
-          height: 350,
-          margin: { t: 20, b: 100, l: 100, r: 20 }, 
-            xaxis: { 
-                // Title must be an object to use 'standoff' and 'text'
-                title: { 
-                text: 'Patient Volume (Current Census)', 
-                standoff: 20 
+          <div className="volume_stress_test">
+            <h3>Efficiency vs. Volume Correlation</h3>
+            <Plot
+              data={[
+                {
+                  x: insightsData?.efficiency_stress_test?.map(s => s.patient_volume) || [],
+                  y: insightsData?.efficiency_stress_test?.map(s => s.p90_wait_time) || [],
+                  mode: 'markers',
+                  type: 'scatter',
+                  name: 'Historical Data',
+                  marker: { color: '#6366f1', size: 10 }
                 },
-                automargin: true // Automatically expands the margin to fit the title
-            },
-            yaxis: { 
-                title: { 
-                text: 'P90 Wait Time (Min)', 
-                standoff: 20 
+                {
+                  x: [100, 125],
+                  y: [600, 900],
+                  mode: 'lines',
+                  type: 'scatter',
+                  name: 'Trend Line',
+                  line: { color: '#ef4444', dash: 'dot' }
+                }
+              ]}
+              layout={{
+                height: 350,
+                margin: { t: 20, b: 100, l: 100, r: 20 },
+                xaxis: {
+                  title: {
+                    text: 'Patient Volume (Current Census)',
+                    standoff: 20
+                  },
+                  automargin: true
                 },
-                automargin: true
-            },
-          showlegend: true,
-          paper_bgcolor: 'transparent',
-          plot_bgcolor: 'transparent'
-        }}
-        useResizeHandler={true}
-        style={{ width: '100%' }}
-      />
-    </div>
-  </div>
+                yaxis: {
+                  title: {
+                    text: 'P90 Wait Time (Min)',
+                    standoff: 20
+                  },
+                  automargin: true
+                },
+                showlegend: true,
+                paper_bgcolor: 'transparent',
+                plot_bgcolor: 'transparent'
+              }}
+              useResizeHandler={true}
+              style={{ width: '100%' }}
+            />
+          </div>
+        </div>
+      </section>
+      {/* SECTION 5: DISPOSITION & ACUITY ANALYSIS */}
+      <section className="insight_block bottom_comparison">
+        <div
+          className="analysis_grid"
+          style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}
+        >
+          <div className="disposition_chart">
+            <h3>Milestone Duration: Admitted vs. Home</h3>
+            {(() => {
+              // 1. Check if dictionary keys match exactly (e.g., 'admitted' vs 'Admitted')
+              const data = insightsData?.disposition_chart ||{};
+              const admitted = data.admitted || {};
+              const home = data.home || {};
+              const milestoneMap = [
+                    { label: 'Vitals', key: 'avg_vital' },
+                    { label: 'Med Recon', key: 'avg_medrecon' },
+                    { label: 'Dispensing', key: 'avg_dispen' },
+                    { label: 'Discharge', key: 'avg_discharge' }
+                  ];
+              // 2. The labels 
+              const labels = milestoneMap.map(item => item.label);
+              const admittedValues = milestoneMap.map(item => Number(admitted[item.key]) || 0);
+              const homeValues = milestoneMap.map(item => Number(home[item.key]) || 0);
+              const admittedHoverText = milestoneMap.map(item => {
+              const value = Number(admitted[item.key]) || 0;
+                return `admitted_${item.label.toLowerCase().replace(/\s+/g, '')}: ${value.toFixed(1)} min`;
+              });
+
+            const homeHoverText = milestoneMap.map(item => {
+            const value = Number(home[item.key]) || 0;
+                return `home_${item.label.toLowerCase().replace(/\s+/g, '')}: ${value.toFixed(1)} min`;
+              });
+              return (
+                <Plot
+                  data={[
+                    {
+                      x: labels,
+                      y: admittedValues,
+                      name: 'Admitted',
+                      type: 'bar',
+                      // orientation: 'h', // <--- This makes it horizontal
+                      marker: { color: '#f5e20bac' },
+                      customdata: admittedHoverText,
+                      hovertemplate: '%{customdata}<extra></extra>'
+                    },
+                    {
+                      x: labels,
+                      y: homeValues,
+                      name: 'Home',
+                      type: 'bar',
+                      marker: { color: '#2563eb' },
+                      customdata: homeHoverText,
+                      hovertemplate: '%{customdata}<extra></extra>'
+                    }
+                  ]}
+                  layout={{
+                    height: 350,
+                    barmode: 'group',
+                    margin: { t: 30, b: 80, l: 60, r: 20 },
+                    paper_bgcolor: 'transparent',
+                    plot_bgcolor: 'transparent',
+                    legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: 1.1 },
+                    xaxis: { 
+                    title: 'ED Milestones', 
+                    tickangle: -45, // Slants labels so they don't overlap
+                    automargin: true,
+                    showgrid: false,
+                    showline: true,
+                    linecolor: "#000",
+                    linewidth: 1,
+                    mirror: false
+                    },
+                    yaxis: { 
+                      title: 'Avg Duration (Min)', 
+                      gridcolor: '#e2e8f0',
+                      automargin: true,
+                      showgrid: false,
+                      showline: true,
+                      linecolor: "#000",
+                      linewidth: 1,
+                      zeroline: false  
+                    }
+                  }}
+                  useResizeHandler={true}
+                  style={{ width: '100%' }}
+                />
+              );
+            })()}
+          </div>
+
+          <div className="acuity_chart">
+            <h3>Stay Duration by Acuity Level</h3>
+            {(() => {
+              const rawData = Array.isArray(insightsData?.acuity_chart)
+                ? insightsData.acuity_chart
+                : [];
+
+              const sortedData = [...rawData].sort((a, b) => a.scale_level - b.scale_level);
+
+              const milestoneMap = [
+                { label: 'Vitals', key: 'avg_vital' },
+                { label: 'Med Recon', key: 'avg_medrecon' },
+                { label: 'Dispensing', key: 'avg_dispen' },
+                { label: 'Discharge', key: 'avg_discharge' }
+              ];
+
+              const levelColorMap = {
+                1: '#2563eb',
+                2: '#ef4444',
+                3: '#f59e0b',
+                4: '#10b981',
+                5: '#94a3b8'
+              };
+
+              const traces = sortedData.map(level => {
+              const levelLabel = `Level ${level.scale_level}`;
+
+              const hoverText = milestoneMap.map(item => {
+                const value = Number(level[item.key]) || 0;
+                return `${levelLabel.toLowerCase().replace(' ', '_')}_${item.label.toLowerCase().replace(/\s+/g, '')}: ${value.toFixed(1)} min`;
+              });
+
+              return {
+                x: milestoneMap.map(item => item.label),
+                y: milestoneMap.map(item => Number(level[item.key]) || 0),
+                name: levelLabel,
+                type: 'bar',
+                marker: { color: levelColorMap[level.scale_level] || '#64748b' },
+                customdata: hoverText,
+                hovertemplate: '%{customdata}<extra></extra>'
+              };
+            });
+              return (
+                <Plot
+                  data={traces}
+                  layout={{
+                    height: 420,
+                    barmode: 'group',
+                    margin: { t: 30, b: 80, l: 60, r: 20 },
+                    paper_bgcolor: 'transparent',
+                    plot_bgcolor: 'transparent',
+                    legend: {
+                      orientation: 'h',
+                      x: 0.5,
+                      xanchor: 'center',
+                      y: 1.15
+                    },
+                    xaxis:  {
+                      title: 'ED Milestones',
+                      tickangle: -30,
+                      automargin: true,
+                      showgrid: false,
+                      showline: true,
+                      linecolor: '#000',
+                      linewidth: 1
+                    },
+                    yaxis: {
+                      title: 'Avg Duration (Min)',
+                      automargin: true,
+                      showgrid: false,
+                      showline: true,
+                      linecolor: '#000',
+                      linewidth: 1,
+                      zeroline: false
+                    }
+                  }}
+                  useResizeHandler={true}
+                  style={{ width: '100%', height: '350px' }}
+                />
+                );
+            })()}
+              </div>
+        </div>
       </section>
     </div>
   );

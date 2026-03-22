@@ -290,7 +290,7 @@ const ViewMetrics = () => {
                 <small className="stat_unit">m</small>
               </span>
               <span className={`trend_indicator ${getTrendClass(dashboardData?.summary.avg_stay.direction)}`}>
-                {getTrendIcon(dashboardData?.summary.avg_stay.direction)} {dashboardData?.summary.avg_stay.trend}m
+                {getTrendIcon(dashboardData?.summary.avg_stay.direction)} {dashboardData?.summary.avg_stay.trend}% {/* change unit to % from minutes since these are percentile metrics */}
               </span>
             </div>
           </div>
@@ -305,10 +305,10 @@ const ViewMetrics = () => {
                 <div className="card_body_mini">
                   <span className="stat_value_large">
                     {data?.value ?? '--'}
-                    <small className="stat_unit">m</small>
+                    <small className="stat_unit">m</small> {/* change unit to % from minutes since these are percentile metrics */}
                   </span>
                   <span className={`trend_indicator ${getTrendClass(data?.direction)}`}>
-                    {getTrendIcon(data?.direction)} {data?.trend}m
+                    {getTrendIcon(data?.direction)} {data?.trend}% {/* change unit to % from minutes since these are percentile metrics */}
                   </span>
                 </div>
               </div>
