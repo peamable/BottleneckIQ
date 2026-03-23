@@ -8,6 +8,57 @@ import {
   Tooltip, ResponsiveContainer, Legend, ReferenceLine 
 } from 'recharts';
 
+function getAxisRange(values, { minPad = 5, padRatio = 0.1 } = {}) {
+  const numericValues = values.filter((value) => Number.isFinite(value));
+  if (!numericValues.length) {
+    return [0, 100];
+  }
+
+  const minValue = Math.min(...numericValues);
+  const maxValue = Math.max(...numericValues);
+
+  if (minValue === maxValue) {
+    const pad = Math.max(minPad, Math.abs(minValue) * padRatio || minPad);
+    return [Math.max(0, minValue - pad), maxValue + pad];
+  }
+
+  const span = maxValue - minValue;
+  const pad = Math.max(minPad, span * padRatio);
+  return [Math.max(0, minValue - pad), maxValue + pad];
+}
+
+function buildTrendLine(points) {
+  const validPoints = points.filter(
+    (point) => Number.isFinite(point.x) && Number.isFinite(point.y)
+  );
+
+  if (validPoints.length < 2) {
+    return null;
+  }
+
+  const n = validPoints.length;
+  const sumX = validPoints.reduce((total, point) => total + point.x, 0);
+  const sumY = validPoints.reduce((total, point) => total + point.y, 0);
+  const sumXY = validPoints.reduce((total, point) => total + (point.x * point.y), 0);
+  const sumXX = validPoints.reduce((total, point) => total + (point.x * point.x), 0);
+  const denominator = (n * sumXX) - (sumX * sumX);
+
+  if (denominator === 0) {
+    return null;
+  }
+
+  const slope = ((n * sumXY) - (sumX * sumY)) / denominator;
+  const intercept = (sumY - (slope * sumX)) / n;
+  const sortedX = validPoints.map((point) => point.x).sort((a, b) => a - b);
+  const startX = sortedX[0];
+  const endX = sortedX[sortedX.length - 1];
+
+  return {
+    x: [startX, endX],
+    y: [slope * startX + intercept, slope * endX + intercept],
+  };
+}
+
 const InsightsPage = () => {
   const [insightsData, setInsightsData] = useState(mockData); // Initially set to mock data for development
   const [error, setError] = useState(null);
@@ -81,6 +132,24 @@ useEffect(() => {
   fetchInsights();
   return () => controller.abort(); // Cleanup
 }, []);
+
+  const correlationPoints = (insightsData?.efficiency_stress_test || [])
+    .map((item) => ({
+      x: Number(item.patient_volume),
+      y: Number(item.p90_wait_time),
+    }))
+    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+
+  const correlationX = correlationPoints.map((point) => point.x);
+  const correlationY = correlationPoints.map((point) => point.y);
+  const correlationTrend = buildTrendLine(correlationPoints);
+  // Fit the chart to the observed data so small datasets do not sit in a huge static range.
+  const correlationXRange = getAxisRange(correlationX, { minPad: 10, padRatio: 0.12 });
+  const correlationYRange = getAxisRange(correlationY, { minPad: 10, padRatio: 0.12 });
+  const dispositionMix = insightsData?.logistics_root_cause?.disposition_mix || [];
+  const dispositionTotalCount = dispositionMix.every((item) => Number.isFinite(Number(item.count)))
+    ? dispositionMix.reduce((total, item) => total + Number(item.count), 0)
+    : null;
 
     return (
     <div className="insights_container">
@@ -175,8 +244,8 @@ useEffect(() => {
       <h4>Disposition Distribution</h4>
       <Plot
         data={[{
-          values: insightsData?.logistics_root_cause?.disposition_mix?.map(d => d.percentage) || [],
-          labels: insightsData?.logistics_root_cause?.disposition_mix?.map(d => d.type) || [],
+          values: dispositionMix.map(d => d.percentage) || [],
+          labels: dispositionMix.map(d => d.type) || [],
           type: 'pie',
           hole: 0.4,
           marker: { colors: ['#2563eb', '#10b981', '#ef4444', '#f59e0b', '#94a3b8'] },
@@ -186,6 +255,16 @@ useEffect(() => {
           height: 320, 
           margin: { t: 10, b: 10, l: 10, r: 10 },
           showlegend: false,
+          annotations: dispositionTotalCount !== null ? [{
+            x: 0.5,
+            y: 0.5,
+            xref: 'paper',
+            yref: 'paper',
+            text: `<span style="font-size:28px;"><b>${dispositionTotalCount}</b></span><br><span style="font-size:15px;">patients</span>`,
+            showarrow: false,
+            font: { size: 18, color: '#0f172a' },
+            align: 'center'
+          }] : [],
           paper_bgcolor: 'transparent'
         }}
         useResizeHandler={true}
@@ -266,21 +345,21 @@ useEffect(() => {
             <Plot
               data={[
                 {
-                  x: insightsData?.efficiency_stress_test?.map(s => s.patient_volume) || [],
-                  y: insightsData?.efficiency_stress_test?.map(s => s.p90_wait_time) || [],
+                  x: correlationX,
+                  y: correlationY,
                   mode: 'markers',
                   type: 'scatter',
                   name: 'Historical Data',
                   marker: { color: '#6366f1', size: 10 }
                 },
-                {
-                  x: [100, 125],
-                  y: [600, 900],
+                ...(correlationTrend ? [{
+                  x: correlationTrend.x,
+                  y: correlationTrend.y,
                   mode: 'lines',
                   type: 'scatter',
                   name: 'Trend Line',
                   line: { color: '#ef4444', dash: 'dot' }
-                }
+                }] : [])
               ]}
               layout={{
                 height: 350,
@@ -290,6 +369,7 @@ useEffect(() => {
                     text: 'Patient Volume (Current Census)',
                     standoff: 20
                   },
+                  range: correlationXRange,
                   automargin: true
                 },
                 yaxis: {
@@ -297,6 +377,7 @@ useEffect(() => {
                     text: 'P90 Wait Time (Min)',
                     standoff: 20
                   },
+                  range: correlationYRange,
                   automargin: true
                 },
                 showlegend: true,
@@ -350,7 +431,7 @@ useEffect(() => {
                       name: 'Admitted',
                       type: 'bar',
                       // orientation: 'h', // <--- This makes it horizontal
-                      marker: { color: '#f5e20bac' },
+                      marker: { color: '#2AA198' },
                       customdata: admittedHoverText,
                       hovertemplate: '%{customdata}<extra></extra>'
                     },
@@ -359,7 +440,7 @@ useEffect(() => {
                       y: homeValues,
                       name: 'Home',
                       type: 'bar',
-                      marker: { color: '#2563eb' },
+                      marker: { color: '#268BD2' },
                       customdata: homeHoverText,
                       hovertemplate: '%{customdata}<extra></extra>'
                     }

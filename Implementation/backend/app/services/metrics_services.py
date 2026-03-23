@@ -13,6 +13,31 @@ def get_latest_upload_id() -> Optional[int]:
     with engine.connect() as conn:
         result = conn.execute(query).mappings().first()
         return result["upload_id"] if result else None
+
+
+def get_latest_upload_record() -> Optional[Dict[str, Any]]:
+    """Returns the most recent upload record regardless of status."""
+    query = text("""
+        SELECT upload_id, upload_timestamp, status
+        FROM upload_history
+        ORDER BY upload_id DESC
+        LIMIT 1
+    """)
+    with engine.connect() as conn:
+        return conn.execute(query).mappings().first()
+
+
+def get_latest_completed_upload_record() -> Optional[Dict[str, Any]]:
+    """Returns the most recent completed upload record for sync timestamps."""
+    query = text("""
+        SELECT upload_id, upload_timestamp, status
+        FROM upload_history
+        WHERE status = 'completed'
+        ORDER BY upload_id DESC
+        LIMIT 1
+    """)
+    with engine.connect() as conn:
+        return conn.execute(query).mappings().first()
     
 # For summary top-level metrics, we want to compare the current upload's metrics to the previous upload's metrics to calculate trends.
 def calculate_trend(current: float, previous: float) -> Dict[str, Any]:
@@ -288,30 +313,54 @@ def get_dashboard_horizon(upload_id: Optional[int] = None) -> Dict[str, Any]:
     Fetches the System Horizon (Upload Date and ID) for the dashboard header.
     Defaults to the most recent upload if no ID is provided.
     """
-    
-    # If no ID, find the latest one first
+
+    result = None
+    latest_record = None
     if upload_id is None:
-        upload_id = get_latest_upload_id()
+        result = get_latest_completed_upload_record()
+        latest_record = get_latest_upload_record()
+        if result:
+            upload_id = result["upload_id"]
+    else:
+        query = text("""
+            SELECT upload_id, upload_timestamp, status
+            FROM upload_history
+            WHERE upload_id = :u_id
+        """)
+        with engine.connect() as conn:
+            result = conn.execute(query, {"u_id": upload_id}).mappings().one_or_none()
 
-    if not upload_id:
-        return {"upload_id": None, "display_date": "No Data Available"}
+    if not upload_id or not result:
+        if latest_record:
+            latest_status = latest_record["status"] or "unknown"
+            return {
+                "upload_id": None,
+                "display_date": "No Completed Upload Yet",
+                "status": "no_data",
+                "current_upload_id": latest_record["upload_id"],
+                "current_status": latest_status,
+            }
+        return {"upload_id": None, "display_date": "No Data Available", "status": "no_data"}
 
-    # Grab the timestamp for this specific upload
-    query = text("""
-        SELECT upload_timestamp 
-        FROM upload_history 
-        WHERE upload_id = :u_id
-    """)
-
-    with engine.connect() as conn:
-        result = conn.execute(query, {"u_id": upload_id}).mappings().one_or_none()
-
-    if result and result["upload_timestamp"]:
+    if result["upload_timestamp"]:
         # Format: "Feb 22, 2026 | 14:30"
         formatted_date = result["upload_timestamp"].strftime("%b %d, %Y | %H:%M")
-        return {
+        payload = {
             "upload_id": upload_id,
-            "display_date": formatted_date
+            "display_date": formatted_date,
+            "status": result["status"] or "unknown",
+            "current_upload_id": None,
+            "current_status": None,
         }
+        if latest_record and latest_record["upload_id"] != result["upload_id"]:
+            payload["current_upload_id"] = latest_record["upload_id"]
+            payload["current_status"] = latest_record["status"] or "unknown"
+        return payload
 
-    return {"upload_id": upload_id, "display_date": "Unknown Date"}
+    return {
+        "upload_id": upload_id,
+        "display_date": "Unknown Date",
+        "status": result["status"] or "unknown",
+        "current_upload_id": latest_record["upload_id"] if latest_record else None,
+        "current_status": (latest_record["status"] or "unknown") if latest_record else None,
+    }

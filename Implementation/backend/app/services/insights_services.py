@@ -64,6 +64,7 @@ def get_disposition_mix(upload_id: int) -> dict:
     disposition_mix = [
         {
             "type": r["disposition_group"],
+            "count": int(r["cnt"]),
             "percentage": float(round(r["pct"], 2))
         }
         for r in rows
@@ -77,10 +78,12 @@ def get_top_chief_complaints(upload_id: int) -> dict:
         WITH stay_duration AS (
             SELECT
                 stay_id,
+                upload_id,
                 MAX(total_ed_stay_time) AS total_ed_stay_time
             FROM event_log
             WHERE total_ed_stay_time IS NOT NULL
-            GROUP BY stay_id
+              AND upload_id = :upload_id
+            GROUP BY stay_id, upload_id
         )
         SELECT
             si.chiefcomplaint,
@@ -89,6 +92,7 @@ def get_top_chief_complaints(upload_id: int) -> dict:
         FROM stay_info si
         JOIN stay_duration sd
             ON si.stay_id = sd.stay_id
+           AND si.upload_id = sd.upload_id
         WHERE si.upload_id = :upload_id
           AND si.chiefcomplaint IS NOT NULL
           AND si.chiefcomplaint <> ''
@@ -145,10 +149,12 @@ def get_equity_audit(upload_id: int) -> list[dict]:
         WITH stay_duration AS (
             SELECT
                 stay_id,
+                upload_id,
                 MAX(total_ed_stay_time) AS total_ed_stay_time
             FROM event_log
             WHERE total_ed_stay_time IS NOT NULL
-            GROUP BY stay_id
+              AND upload_id = :upload_id
+            GROUP BY stay_id, upload_id
         ),
         base AS (
             SELECT
@@ -157,6 +163,7 @@ def get_equity_audit(upload_id: int) -> list[dict]:
             FROM stay_info si
             JOIN stay_duration sd
               ON si.stay_id = sd.stay_id
+             AND si.upload_id = sd.upload_id
             WHERE si.upload_id = :upload_id
               AND si.race IS NOT NULL
               AND si.race <> ''
@@ -206,7 +213,9 @@ def get_chief_complaint_bottleneck_insights(upload_id: int):
         FROM stay_info s
         JOIN event_log e
             ON s.stay_id = e.stay_id
+           AND s.upload_id = e.upload_id
         WHERE s.upload_id = :u_id
+          AND e.upload_id = :u_id
           AND s.chiefcomplaint IS NOT NULL
           AND s.chiefcomplaint <> ''
           AND e.total_ed_stay_time IS NOT NULL
@@ -335,11 +344,11 @@ def get_chief_complaint_bottleneck_insights(upload_id: int):
         stats["transfer_count"] / stats["patient_count"] * 100
     ).round(2)
 
-    print(f"\n--- OPERATIONAL BOTTLENECKS (ID: {upload_id}) ---")
-    print(stats[[
-        "op_group", "patient_count", "transfer_count",
-        "transfer_pct", "total_bed_hours"
-    ]].head(10))
+#    print(f"\n--- OPERATIONAL BOTTLENECKS (ID: {upload_id}) ---")
+#    print(stats[[
+#        "op_group", "patient_count", "transfer_count",
+#        "transfer_pct", "total_bed_hours"
+#    ]].head(10))
 
     return [
         {
@@ -359,13 +368,13 @@ def get_volume_efficiency_correlation():
         SELECT
             u.upload_id,
             m.p90_value,
-            COUNT(DISTINCT e.stay_id) AS patient_volume
+            COUNT(DISTINCT s.stay_id) AS patient_volume
         FROM upload_history u
         JOIN metrics m
             ON u.upload_id = m.upload_id
-        LEFT JOIN event_log e
-            ON u.upload_id = e.upload_id
-        where metric_name = 'total_ed_stay_time'
+        AND m.metric_name = 'total_ed_stay_time'
+        LEFT JOIN stay_info s
+            ON u.upload_id = s.upload_id
         GROUP BY u.upload_id, m.p90_value
         ORDER BY u.upload_id;
     """)

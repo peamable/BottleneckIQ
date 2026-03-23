@@ -105,3 +105,38 @@
   border-radius: 50%;
   box-shadow: 0 0 8px #10b981; /* Adds a "glow" effect */
 }
+
+.sync_processing,
+.sync_action_required {
+  color: #fbbf24;
+}
+
+.sync_processing .live_dot,
+.sync_action_required .live_dot {
+  background-color: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
+.sync_failed,
+.sync_offline {
+  color: #f87171;
+}
+
+.sync_failed .live_dot,
+.sync_offline .live_dot {
+  background-color: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.sync_no_data,
+.sync_loading,
+.sync_unknown {
+  color: #94a3b8;
+}
+
+.sync_no_data .live_dot,
+.sync_loading .live_dot,
+.sync_unknown .live_dot {
+  background-color: #94a3b8;
+  box-shadow: none;
+}
