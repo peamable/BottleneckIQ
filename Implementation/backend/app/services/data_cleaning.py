@@ -111,6 +111,10 @@ def clean_to_ed_stay_and_stay_info(df_raw: pd.DataFrame):
         )
 
     df_stay_info["scale_level"] = pd.to_numeric(df_stay_info["scale_level"], errors="coerce")
+    df_stay_info.loc[
+        ~df_stay_info["scale_level"].between(1, 5, inclusive="both"),
+        "scale_level",
+    ] = pd.NA
     
     # helper: first non-null value in a Series
     def first_non_null(s: pd.Series):
@@ -130,9 +134,8 @@ def clean_to_ed_stay_and_stay_info(df_raw: pd.DataFrame):
             })
     )
     
-    df_stay_info = df_stay_info.dropna(
-        subset=["stay_id", "gender", "race", "arrival_transport", "disposition", "chiefcomplaint", "scale_level"]
-    )
+    # Preserve the stay record even when optional descriptive attributes are blank.
+    df_stay_info = df_stay_info.dropna(subset=["stay_id"])
     
     
             

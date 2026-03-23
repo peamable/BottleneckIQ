@@ -6,6 +6,38 @@ from app.services.staging_tables import ensure_staging_tables, reset_staging_bat
 from app.services.data_validation import validate_batch, delete_skippable_rows
 
 
+def ensure_stay_info_nullable_schema() -> None:
+    with engine.begin() as conn:
+        non_nullable_columns = conn.execute(text("""
+            SELECT COUNT(*)
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = 'stay_info'
+              AND column_name IN (
+                    'gender',
+                    'race',
+                    'arrival_transport',
+                    'disposition',
+                    'chiefcomplaint',
+                    'scale_level'
+              )
+              AND is_nullable = 'NO'
+        """)).scalar() or 0
+
+        if non_nullable_columns == 0:
+            return
+
+        conn.execute(text("""
+            ALTER TABLE stay_info
+                MODIFY gender CHAR(10) NULL,
+                MODIFY race VARCHAR(250) NULL,
+                MODIFY arrival_transport VARCHAR(250) NULL,
+                MODIFY disposition VARCHAR(250) NULL,
+                MODIFY chiefcomplaint VARCHAR(250) NULL,
+                MODIFY scale_level SMALLINT NULL
+        """))
+
+
 def load_to_staging(
     df_ed_stay: pd.DataFrame,
     df_stay_info: pd.DataFrame,
@@ -50,6 +82,8 @@ def load_to_staging(
 
 
 def insert_final_from_staging(batch_id: str):
+    ensure_stay_info_nullable_schema()
+
     with engine.begin() as conn:
         res1 = conn.execute(text("""
             INSERT IGNORE INTO ed_stay (
@@ -80,12 +114,6 @@ def insert_final_from_staging(batch_id: str):
             FROM stay_info_staging
             WHERE batch_id = :b
               AND stay_id IS NOT NULL
-              AND gender IS NOT NULL
-              AND race IS NOT NULL
-              AND arrival_transport IS NOT NULL
-              AND disposition IS NOT NULL
-              AND scale_level IS NOT NULL
-              AND chiefcomplaint IS NOT NULL
               AND upload_id IS NOT NULL
             ON DUPLICATE KEY UPDATE
               gender = VALUES(gender),
