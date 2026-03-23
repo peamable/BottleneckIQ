@@ -198,7 +198,7 @@ def _run_upload_pipeline(upload_id: int, batch_id: str, file_path: str) -> None:
         set_job_state(
             upload_id,
             status="failed",
-            message=f"Internal error: {e}",
+            message="Internal server error.",
             allow_skip=False,
         )
         logger.error(f"Upload failed: {str(e)}\n{traceback.format_exc()}")
@@ -243,7 +243,7 @@ async def upload(background_tasks: BackgroundTasks, file: UploadFile = File(...)
                 logger.error(f"Failed to update upload status: {status_err}")
 
         logger.error(f"Upload failed: {str(e)}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error.")
 
 
 @router.get("/upload-status/{upload_id}")

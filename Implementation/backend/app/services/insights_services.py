@@ -207,19 +207,16 @@ def get_equity_audit(upload_id: int) -> list[dict]:
 def get_chief_complaint_bottleneck_insights(upload_id: int):
     query = text("""
         SELECT
-            s.stay_id,
-            s.chiefcomplaint,
+            e.stay_id,
+            COALESCE(NULLIF(TRIM(s.chiefcomplaint), ''), 'unknown / missing') AS chiefcomplaint,
             MAX(e.total_ed_stay_time) / 60 AS los_hours
-        FROM stay_info s
-        JOIN event_log e
+        FROM event_log e
+        LEFT JOIN stay_info s
             ON s.stay_id = e.stay_id
            AND s.upload_id = e.upload_id
-        WHERE s.upload_id = :u_id
-          AND e.upload_id = :u_id
-          AND s.chiefcomplaint IS NOT NULL
-          AND s.chiefcomplaint <> ''
+        WHERE e.upload_id = :u_id
           AND e.total_ed_stay_time IS NOT NULL
-        GROUP BY s.stay_id, s.chiefcomplaint
+        GROUP BY e.stay_id, COALESCE(NULLIF(TRIM(s.chiefcomplaint), ''), 'unknown / missing')
     """)
 
     with engine.connect() as conn:
@@ -293,7 +290,13 @@ def get_chief_complaint_bottleneck_insights(upload_id: int):
     }
 
     def normalize_complaint(text):
+        if pd.isna(text):
+            return "unknown / missing"
+
         text = str(text).lower().strip()
+        if not text:
+            return "unknown / missing"
+
         replacements = {
             r"\bh/a\b": "headache",
             r"\bsob\b": "shortness of breath",
@@ -315,6 +318,8 @@ def get_chief_complaint_bottleneck_insights(upload_id: int):
 
     def map_to_op_group(text):
         text = normalize_complaint(text)
+        if text == "unknown / missing":
+            return "Unknown/Missing"
         for group, pattern in compiled_patterns.items():
             if pattern.search(text):
                 return group

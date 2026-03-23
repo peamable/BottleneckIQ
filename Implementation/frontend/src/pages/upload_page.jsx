@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import { FileUp, FileCheck, XCircle, Loader2, CheckCircle2 } from 'lucide-react';
+import { FileUp, FileCheck, XCircle, Loader2, CheckCircle2, ArrowLeft, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import FileUpload from '../components/upload_file';
 
@@ -14,6 +14,8 @@ const fallbackStages = [
   { key: 'analytics', label: 'Analytics', status: 'pending' },
 ];
 
+const CSV_ONLY_MESSAGE = 'Please upload a CSV (.csv) file to continue.';
+
 const UploadPage = () => {
   const [file, setFile] = useState(null);
   const [lastUploadId, setLastUploadId] = useState(null);
@@ -22,17 +24,42 @@ const UploadPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [isContinuing, setIsContinuing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadSelectionError, setUploadSelectionError] = useState('');
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
+
+  const isCsvFile = (candidateFile) => {
+    if (!candidateFile?.name) return false;
+    return candidateFile.name.toLowerCase().endsWith('.csv');
+  };
+
+  const acceptSelectedFile = (candidateFile) => {
+    if (!candidateFile) return;
+
+    if (!isCsvFile(candidateFile)) {
+      setFile(null);
+      setPipelineStatus(null);
+      setActiveUploadId(null);
+      setModalOpen(false);
+      setUploadSelectionError(CSV_ONLY_MESSAGE);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    setUploadSelectionError('');
+    setFile(candidateFile);
+    setPipelineStatus(null);
+    setActiveUploadId(null);
+    setModalOpen(false);
+  };
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
-    setFile(selectedFile);
-    setPipelineStatus(null);
-    setActiveUploadId(null);
-    setModalOpen(false);
+    acceptSelectedFile(selectedFile);
   };
 
   const removeFile = () => {
@@ -40,6 +67,7 @@ const UploadPage = () => {
     setPipelineStatus(null);
     setActiveUploadId(null);
     setModalOpen(false);
+    setUploadSelectionError('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -83,6 +111,18 @@ const UploadPage = () => {
           err?.response?.data?.message ||
           err?.message ||
           'Upload failed. Please try again.';
+
+    if (message === 'Only CSV files are allowed.') {
+      setFile(null);
+      setPipelineStatus(null);
+      setActiveUploadId(null);
+      setModalOpen(false);
+      setUploadSelectionError(CSV_ONLY_MESSAGE);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
 
     setPipelineStatus({
       status: 'failed',
@@ -154,6 +194,10 @@ const UploadPage = () => {
     openFilePicker();
   };
 
+  const handleRetryFromModal = () => {
+    window.location.reload();
+  };
+
   const handleDragOver = (e) => {
     e.preventDefault();
     setIsDragging(true);
@@ -170,10 +214,7 @@ const UploadPage = () => {
 
     const droppedFile = e.dataTransfer.files?.[0];
     if (droppedFile) {
-      setFile(droppedFile);
-      setPipelineStatus(null);
-      setActiveUploadId(null);
-      setModalOpen(false);
+      acceptSelectedFile(droppedFile);
     }
   };
 
@@ -251,6 +292,13 @@ const UploadPage = () => {
           </div>
         )}
 
+        {uploadSelectionError && (
+          <div className="upload-inline-error" role="alert" aria-live="polite">
+            <span className="upload-inline-error-icon" aria-hidden="true">!</span>
+            <span>{uploadSelectionError}</span>
+          </div>
+        )}
+
         <FileUpload
           file={file}
           onUploadStart={handleStart}
@@ -263,127 +311,139 @@ const UploadPage = () => {
       {modalOpen && (
         <div className="modal_overlay">
           <div className="modal_content modal_pipeline">
-            <h3>
-              {isCompleted
-                ? 'Pipeline Complete'
-                : isActionRequired
-                  ? 'Pipeline Paused At Validation'
-                  : 'Processing Pipeline'}
-            </h3>
-            <p>{modalMessage}</p>
-
-            <div className="pipeline-stage-list">
-              {stages.map((stage) => (
-                <div key={stage.key} className={`pipeline-stage-row ${stage.status}`}>
-                  <div className="pipeline-stage-status">
-                    {renderStageIcon(stage.status)}
-                  </div>
-                  <div className="pipeline-stage-copy">
-                    <span className="pipeline-stage-label">{stage.label}</span>
-                    <span className="pipeline-stage-state">{stage.status.replace('_', ' ')}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {missingFields.length > 0 && (
-              <div className="pipeline-issue-box">
-                <h4>Missing required fields</h4>
-                <ul className="upload-error-list">
-                  {missingFields.map((field) => (
-                    <li key={field}>{field}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {validationIssues.length > 0 && (
-              <div className="pipeline-issue-box">
-                <h4>Validation issues</h4>
-                <ul className="upload-error-list">
-                  {validationIssues.map((issue) => (
-                    <li key={issue.code}>{issue.message}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {!isCompleted && !!pipelineStatus?.skipped_rows?.length && (
-              <div className="pipeline-issue-box pipeline-skip-box">
-                <h4>Skipped rows</h4>
-                <ul className="upload-error-list">
-                  {pipelineStatus.skipped_rows.map((item) => (
-                    <li key={item.code}>{item.rows_deleted} rows removed for {item.code}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {isCompleted && summaryReport && (
-              <div className="pipeline-summary-box">
-                <h4>Pipeline summary</h4>
-                <div className="pipeline-summary-grid">
-                  <div className="pipeline-summary-item">
-                    <span className="pipeline-summary-value">{summaryReport.stay_ids_inserted ?? 0}</span>
-                    <span className="pipeline-summary-label">Stay IDs inserted</span>
-                  </div>
-                  <div className="pipeline-summary-item">
-                    <span className="pipeline-summary-value">{summaryReport.rows_skipped_or_removed ?? 0}</span>
-                    <span className="pipeline-summary-label">Rows skipped or removed</span>
-                  </div>
-                  <div className="pipeline-summary-item">
-                    <span className="pipeline-summary-value">{summaryReport.ed_events_inserted ?? 0}</span>
-                    <span className="pipeline-summary-label">ED events inserted</span>
-                  </div>
-                  <div className="pipeline-summary-item">
-                    <span className="pipeline-summary-value">{summaryReport.stay_ids_summarized ?? 0}</span>
-                    <span className="pipeline-summary-label">Stay IDs summarized</span>
-                  </div>
+            {isFailed ? (
+              <div className="pipeline-failed-state">
+                <div className="pipeline-failed-face">:(</div>
+                <h3>Server Error</h3>
+                <p>We could not connect to the server while processing your upload.</p>
+                <div className="pipeline-error-code">Error code: 500</div>
+                <div className="pipeline-error-actions">
+                  <button className="btn-linkish pipeline-error-btn" onClick={() => setModalOpen(false)}>
+                    <ArrowLeft size={16} />
+                    <span>Go Back</span>
+                  </button>
+                  <button className="btn-primary pipeline-error-btn" onClick={handleRetryFromModal}>
+                    <RefreshCw size={16} />
+                    <span>Try Again</span>
+                  </button>
                 </div>
               </div>
-            )}
+            ) : (
+              <>
+                <h3>
+                  {isCompleted
+                    ? 'Pipeline Complete'
+                    : isActionRequired
+                      ? 'Pipeline Paused At Validation'
+                      : 'Processing Pipeline'}
+                </h3>
+                <p>{modalMessage}</p>
 
-            <div className="pipeline-actions">
-              {isCompleted ? (
-                <>
-                  <button
-                    className="btn_primary"
-                    onClick={() => navigate('/view_metrics', { state: { upload_id: lastUploadId } })}
-                  >
-                    View Metrics Dashboard
-                  </button>
-                  <button className="btn-linkish" onClick={() => setModalOpen(false)}>
-                    Close
-                  </button>
-                </>
-              ) : isActionRequired ? (
-                <div className="button-group">
-                  <button className="btn-primary" onClick={handleReplaceFromModal}>
-                    Back
-                  </button>
-                  {pipelineStatus?.allow_skip && (
-                    <button
-                      className="btn-process-anyway"
-                      onClick={handleProcessAnyway}
-                      disabled={isContinuing}
-                    >
-                      {isContinuing ? 'Resuming...' : 'Ignore & Continue'}
-                    </button>
+                <div className="pipeline-stage-list">
+                  {stages.map((stage) => (
+                    <div key={stage.key} className={`pipeline-stage-row ${stage.status}`}>
+                      <div className="pipeline-stage-status">
+                        {renderStageIcon(stage.status)}
+                      </div>
+                      <div className="pipeline-stage-copy">
+                        <span className="pipeline-stage-label">{stage.label}</span>
+                        <span className="pipeline-stage-state">{stage.status.replace('_', ' ')}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {missingFields.length > 0 && (
+                  <div className="pipeline-issue-box">
+                    <h4>Missing required fields</h4>
+                    <ul className="upload-error-list">
+                      {missingFields.map((field) => (
+                        <li key={field}>{field}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {validationIssues.length > 0 && (
+                  <div className="pipeline-issue-box">
+                    <h4>Validation issues</h4>
+                    <ul className="upload-error-list">
+                      {validationIssues.map((issue) => (
+                        <li key={issue.code}>{issue.message}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {!isCompleted && !!pipelineStatus?.skipped_rows?.length && (
+                  <div className="pipeline-issue-box pipeline-skip-box">
+                    <h4>Skipped rows</h4>
+                    <ul className="upload-error-list">
+                      {pipelineStatus.skipped_rows.map((item) => (
+                        <li key={item.code}>{item.rows_deleted} records affected for {item.code}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {isCompleted && summaryReport && (
+                  <div className="pipeline-summary-box">
+                    <h4>Pipeline summary</h4>
+                    <div className="pipeline-summary-grid">
+                      <div className="pipeline-summary-item">
+                        <span className="pipeline-summary-value">{summaryReport.stay_ids_inserted ?? 0}</span>
+                        <span className="pipeline-summary-label">Stay IDs inserted</span>
+                      </div>
+                      <div className="pipeline-summary-item">
+                        <span className="pipeline-summary-value">{summaryReport.rows_skipped_or_removed ?? 0}</span>
+                        <span className="pipeline-summary-label">Rows skipped or removed</span>
+                      </div>
+                      <div className="pipeline-summary-item">
+                        <span className="pipeline-summary-value">{summaryReport.ed_events_inserted ?? 0}</span>
+                        <span className="pipeline-summary-label">ED events inserted</span>
+                      </div>
+                      <div className="pipeline-summary-item">
+                        <span className="pipeline-summary-value">{summaryReport.stay_ids_summarized ?? 0}</span>
+                        <span className="pipeline-summary-label">Stay IDs summarized</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pipeline-actions">
+                  {isCompleted ? (
+                    <div className="button-group pipeline-action-buttons">
+                      <button
+                        className="btn-primary"
+                        onClick={() => navigate('/view_metrics', { state: { upload_id: lastUploadId } })}
+                      >
+                        View Metrics Dashboard
+                      </button>
+                      <button className="btn-linkish" onClick={() => setModalOpen(false)}>
+                        Close
+                      </button>
+                    </div>
+                  ) : isActionRequired ? (
+                    <div className="button-group pipeline-action-buttons">
+                      <button className="btn-primary" onClick={handleReplaceFromModal}>
+                        Back
+                      </button>
+                      {pipelineStatus?.allow_skip && (
+                        <button
+                          className="btn-process-anyway"
+                          onClick={handleProcessAnyway}
+                          disabled={isContinuing}
+                        >
+                          {isContinuing ? 'Resuming...' : 'Ignore & Continue'}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="pipeline-pending-note">The pipeline updates automatically as each stage completes.</div>
                   )}
                 </div>
-              ) : isFailed ? (
-                <>
-                  <button className="btn-primary" onClick={handleReplaceFromModal}>
-                    Choose Another File
-                  </button>
-                  <button className="btn-linkish" onClick={() => setModalOpen(false)}>
-                    Close
-                  </button>
-                </>
-              ) : (
-                <div className="pipeline-pending-note">The pipeline updates automatically as each stage completes.</div>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </div>
       )}

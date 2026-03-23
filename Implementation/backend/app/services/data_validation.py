@@ -55,29 +55,11 @@ def validate_batch(batch_id: str) -> list[dict]:
                 False,
             ))
 
-        bad_stay_info_nulls = conn.execute(text("""
-            SELECT COUNT(*) FROM stay_info_staging
-            WHERE batch_id = :b
-              AND (
-                gender IS NULL
-                OR race IS NULL
-                OR arrival_transport IS NULL
-                OR disposition IS NULL
-                OR chiefcomplaint IS NULL
-              )
-        """), {"b": batch_id}).scalar() or 0
-        if bad_stay_info_nulls > 0:
-            issues.append(_issue(
-                "stay_info_missing_required",
-                f"{_format_count(bad_stay_info_nulls, 'stay record')} {'is' if bad_stay_info_nulls == 1 else 'are'} missing gender, race, arrival transport, disposition, or chief complaint.",
-                bad_stay_info_nulls,
-                True,
-            ))
-
         bad_scale_level = conn.execute(text("""
             SELECT COUNT(*) FROM stay_info_staging
             WHERE batch_id = :b
-              AND (scale_level IS NULL OR scale_level < 1 OR scale_level > 5 OR scale_level <> FLOOR(scale_level))
+              AND scale_level IS NOT NULL
+              AND (scale_level < 1 OR scale_level > 5 OR scale_level <> FLOOR(scale_level))
         """), {"b": batch_id}).scalar() or 0
         if bad_scale_level > 0:
             issues.append(_issue(
@@ -104,7 +86,7 @@ def validate_batch(batch_id: str) -> list[dict]:
         if unmatched_ed_stays > 0:
             issues.append(_issue(
                 "ed_missing_matching_stay_info",
-                f"{_format_count(unmatched_ed_stays, 'stay_id')} {'has' if unmatched_ed_stays == 1 else 'have'} no matching stay information. Please check fields such as gender, race, arrival transport, disposition, chief complaint, or acuity.",
+                f"{_format_count(unmatched_ed_stays, 'stay_id')} {'has' if unmatched_ed_stays == 1 else 'have'} no matching stay information row. Please make sure each ED stay has the same stay_id in the stay info tab.",
                 unmatched_ed_stays,
                 True,
             ))
@@ -114,7 +96,7 @@ def validate_batch(batch_id: str) -> list[dict]:
 
 def delete_skippable_rows(batch_id: str, issues: list[dict]) -> list[dict]:
     """
-    Deletes staging rows for the skippable validation issues that were detected.
+    Applies cleanup actions for the skippable validation issues that were detected.
     Returns a summary of the cleanup actions taken.
     """
     skipped = []
@@ -130,29 +112,16 @@ def delete_skippable_rows(batch_id: str, issues: list[dict]) -> list[dict]:
             if deleted:
                 skipped.append({"code": "ed_missing_required", "rows_deleted": int(deleted)})
 
-        if "stay_info_missing_required" in issue_codes:
-            deleted = conn.execute(text("""
-                DELETE FROM stay_info_staging
-                WHERE batch_id = :b
-                  AND (
-                    gender IS NULL
-                    OR race IS NULL
-                    OR arrival_transport IS NULL
-                    OR disposition IS NULL
-                    OR chiefcomplaint IS NULL
-                  )
-            """), {"b": batch_id}).rowcount
-            if deleted:
-                skipped.append({"code": "stay_info_missing_required", "rows_deleted": int(deleted)})
-
         if "stay_info_invalid_scale_level" in issue_codes:
-            deleted = conn.execute(text("""
-                DELETE FROM stay_info_staging
+            updated = conn.execute(text("""
+                UPDATE stay_info_staging
+                SET scale_level = NULL
                 WHERE batch_id = :b
-                  AND (scale_level IS NULL OR scale_level < 1 OR scale_level > 5 OR scale_level <> FLOOR(scale_level))
+                  AND scale_level IS NOT NULL
+                  AND (scale_level < 1 OR scale_level > 5 OR scale_level <> FLOOR(scale_level))
             """), {"b": batch_id}).rowcount
-            if deleted:
-                skipped.append({"code": "stay_info_invalid_scale_level", "rows_deleted": int(deleted)})
+            if updated:
+                skipped.append({"code": "stay_info_invalid_scale_level", "rows_deleted": int(updated)})
 
         if "ed_missing_matching_stay_info" in issue_codes:
             deleted = conn.execute(text("""
