@@ -359,7 +359,7 @@ const UploadPage = () => {
               ) : isActionRequired ? (
                 <div className="button-group">
                   <button className="btn-primary" onClick={handleReplaceFromModal}>
-                    Fix Issue
+                    Back
                   </button>
                   {pipelineStatus?.allow_skip && (
                     <button
