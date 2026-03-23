@@ -15,7 +15,7 @@ CREATE TABLE `ed_stay` (
   `activity` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `upload_id` bigint NOT NULL,
   PRIMARY KEY (`record_id`),
-  KEY `stay_id_ed_timestamp_activity` (`stay_id`,`ed_timestamp`,`activity`),
+  UNIQUE KEY `idx_unq_ed_stay_upload_event` (`stay_id`,`ed_timestamp`,`activity`,`upload_id`),
   KEY `upload_id` (`upload_id`),
   CONSTRAINT `ed_stay_ibfk_3` FOREIGN KEY (`upload_id`) REFERENCES `upload_history` (`upload_id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -48,7 +48,7 @@ CREATE TABLE `event_log` (
   `skipped_stages` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `upload_id` bigint DEFAULT NULL,
   PRIMARY KEY (`event_log_id`),
-  UNIQUE KEY `idx_unq_event_stay_id` (`stay_id`),
+  UNIQUE KEY `idx_unq_event_stay_upload` (`stay_id`,`upload_id`),
   KEY `upload_id` (`upload_id`),
   CONSTRAINT `event_log_ibfk_1` FOREIGN KEY (`upload_id`) REFERENCES `upload_history` (`upload_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -81,7 +81,10 @@ CREATE TABLE `metrics` (
   `max_value` float NOT NULL,
   `stay_time_per_acuity` json NOT NULL,
   `upload_id` bigint NOT NULL,
-  PRIMARY KEY (`metric_id`)
+  PRIMARY KEY (`metric_id`),
+  UNIQUE KEY `idx_unq_metrics_upload_metric` (`upload_id`,`metric_name`),
+  KEY `upload_id` (`upload_id`),
+  CONSTRAINT `metrics_ibfk_1` FOREIGN KEY (`upload_id`) REFERENCES `upload_history` (`upload_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -110,7 +113,7 @@ CREATE TABLE `stay_info` (
   `scale_level` smallint NOT NULL,
   `upload_id` bigint NOT NULL,
   PRIMARY KEY (`stay_info_id`),
-  UNIQUE KEY `stay_id` (`stay_id`),
+  UNIQUE KEY `idx_unq_stay_info_upload` (`stay_id`,`upload_id`),
   KEY `upload_id` (`upload_id`),
   CONSTRAINT `stay_info_ibfk_1` FOREIGN KEY (`upload_id`) REFERENCES `upload_history` (`upload_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -147,6 +150,7 @@ CREATE TABLE `temporal_summary` (
   `acuity_5` int DEFAULT '0',
   `upload_id` bigint NOT NULL,
   PRIMARY KEY (`aggregate_id`),
+  UNIQUE KEY `idx_unq_temporal_summary_upload_hour` (`upload_id`,`timestamp_hour`),
   KEY `upload_id` (`upload_id`),
   CONSTRAINT `temporal_summary_ibfk_1` FOREIGN KEY (`upload_id`) REFERENCES `upload_history` (`upload_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

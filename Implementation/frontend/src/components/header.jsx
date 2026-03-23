@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import React from "react";
-import {Link} from 'react-router-dom';
+import {Link, useLocation} from 'react-router-dom';
 import {Activity, Bell, User} from 'lucide-react';
 import '../header.css';
 
 const Header = ({ uploadIdFromUrl }) => {
-
-    const [horizon, setHorizon] = useState({ id: null, date: "Loading..." });
+    const [horizon, setHorizon] = useState({ id: null, date: "Loading...", status: "loading" });
+    const location = useLocation();
 
   useEffect(() => {
+    let intervalId;
+
     const fetchHorizon = async () => {
       // If the URL has an ID, use it. Otherwise, the API defaults to 'Latest'
       const url = uploadIdFromUrl 
@@ -18,14 +20,31 @@ const Header = ({ uploadIdFromUrl }) => {
       try {
         const response = await fetch(url);
         const data = await response.json();
-        setHorizon({ id: data.upload_id, date: data.display_date });
+        setHorizon({ id: data.upload_id, date: data.display_date, status: data.status ?? "unknown" });
       } catch (err) {
-        setHorizon({ id: null, date: "System Offline" });
+        setHorizon({ id: null, date: "System Offline", status: "offline" });
       }
     };
 
     fetchHorizon();
-  }, [uploadIdFromUrl]); // Re-run if the user switches uploads
+    // Refresh on navigation and periodically so the sync state does not go stale after uploads.
+    intervalId = window.setInterval(fetchHorizon, 10000);
+
+    return () => window.clearInterval(intervalId);
+  }, [uploadIdFromUrl, location.key]); // Re-run if the user switches uploads or navigates
+
+    const statusTextMap = {
+        loading: "searching...",
+        no_data: "no uploads yet",
+        processing: "processing",
+        action_required: "validation paused",
+        completed: "completed",
+        failed: "failed",
+        offline: "offline",
+        unknown: "status unknown",
+    };
+
+    const syncClass = `sync_status sync_${horizon.status ?? 'unknown'}`;
     return (
         <nav className="main-header">
             {/* LEFT SIDE: The Logo */}
@@ -57,10 +76,9 @@ const Header = ({ uploadIdFromUrl }) => {
                     {horizon.date} (ID: {horizon.id ?? '--'})
                 </span>
 
-                <div className="sync_status">
-                    {/* The live dot stays green to show the system is connected */}
+                <div className={syncClass}>
                     <span className="live_dot"></span> 
-                    Last Sync: {horizon.id ? 'just now' : 'searching...'}
+                    Last Sync: {statusTextMap[horizon.status] ?? 'status unknown'}
                 </div>
             </div>
 
