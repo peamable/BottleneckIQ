@@ -15,3 +15,5 @@ async def get_logistics_root_cause():
     return {
         "logistics_root_cause": result["logistics_root_cause"]
     }
+
+
