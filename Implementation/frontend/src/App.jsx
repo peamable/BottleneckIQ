@@ -1,39 +1,50 @@
-import { React, useState } from 'react'
+import React from 'react'
 import './App.css'
-import {BrowserRouter, Routes, Route} from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import MainPage from './pages/main_page.jsx';
 import UploadPage from './pages/upload_page.jsx';
 import Header from './components/header.jsx';
 import Footer from './components/footer.jsx';
 import ViewMetrics from './pages/view_metrics_page.jsx';
-import Insights from './pages/insights_page.jsx'
+import Insights from './pages/insights_page.jsx';
+import AuthPage from './pages/auth_page.jsx';
+import ProtectedRoute from './components/protected_route.jsx';
 
-
-
-function App() {
+function AppShell() {
+  const location = useLocation();
+  const isAuthPage = location.pathname === '/auth';
 
   return (
-      <BrowserRouter>
-      
       <div className='App'>
-         <Header/>
-         {/* <BottleneckBanner/> */}
-         <div className="page-content">
+         {!isAuthPage && <Header/>}
+         <div className={isAuthPage ? 'page-content auth-page-shell' : 'page-content'}>
         <Routes>
           <Route path='/' element= {<MainPage/>}></Route>
-          <Route path='/upload' element= {<UploadPage/>}></Route>
+          <Route path='/auth' element= {<AuthPage/>}></Route>
+          <Route
+            path='/upload'
+            element={
+              <ProtectedRoute>
+                <UploadPage/>
+              </ProtectedRoute>
+            }
+          ></Route>
           <Route path='/insights' element= {<Insights/>}></Route>
           <Route path='/view_metrics' element= {<ViewMetrics/>}></Route>  {/*change to viewMetrics when you set it up */}
         </Routes>
       
       </div>
-      <Footer/>
+      {!isAuthPage && <Footer/>}
     </div>
-      </BrowserRouter>
-
-
-    
   )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppShell />
+    </BrowserRouter>
+  );
 }
 
 export default App

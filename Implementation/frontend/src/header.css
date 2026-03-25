@@ -40,6 +40,25 @@
   gap: 20px;
 }
 
+.header-logout-button {
+  padding: 0.5rem 0.85rem;
+  border: 1px solid #334155;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.28);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.header-logout-button:hover {
+  background: #020617;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.34);
+  transform: translateY(-1px);
+}
+
 .icon-button {
   background: none;
   border: none;
@@ -60,6 +79,41 @@
   color: #cbd5e1;
   border-left: 1px solid #334155;
   padding-left: 20px;
+  max-width: 220px;
+}
+
+.user-profile-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  justify-content: center;
+}
+
+.user-profile-title {
+  color: #e2e8f0;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.user-profile-subtitle {
+  color: #94a3b8;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-profile-link {
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.user-profile-link:hover .user-profile-title {
+  color: #ffffff;
+}
+
+.user-profile-link:hover .user-profile-subtitle {
+  color: #cbd5e1;
 }
 
 /* --- DATA HORIZON STYLING (HEADER VERSION) --- */
