@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import React from "react";
-import {Link, useLocation} from 'react-router-dom';
-import {Activity, Bell, User} from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Activity, Bell, User } from 'lucide-react';
 import '../header.css';
+import { useAuth } from '../context/auth_context.jsx';
 
 const Header = ({ uploadIdFromUrl }) => {
     const [horizon, setHorizon] = useState({ id: null, date: "Loading...", status: "loading" });
     const location = useLocation();
+    const navigate = useNavigate();
+    const { user, logOut } = useAuth();
 
   useEffect(() => {
     let intervalId;
@@ -32,6 +35,15 @@ const Header = ({ uploadIdFromUrl }) => {
 
     return () => window.clearInterval(intervalId);
   }, [uploadIdFromUrl, location.key]); // Re-run if the user switches uploads or navigates
+
+    const handleLogout = async () => {
+        try {
+            await logOut();
+            navigate('/');
+        } catch (error) {
+            console.error('Logout failed', error);
+        }
+    };
 
     const statusTextMap = {
         loading: "searching...",
@@ -87,10 +99,18 @@ const Header = ({ uploadIdFromUrl }) => {
                 <button className="icon-button">
                 <Bell size={20} />
                 </button>
-                <div className="user-profile">
-                <User size={20} />
-                <span>Analyst Mode</span>
-                </div>
+                {user ? (
+                    <button className="header-logout-button" onClick={handleLogout}>
+                        <span>Log Out</span>
+                    </button>
+                ) : (
+                    <Link to="/auth" className="user-profile user-profile-link">
+                        <User size={20} />
+                        <div className="user-profile-copy">
+                            <span className="user-profile-title">Sign In</span>
+                        </div>
+                    </Link>
+                )}
             </div>
         </nav>
     );
