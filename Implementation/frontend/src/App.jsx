@@ -19,8 +19,9 @@ function AppShell() {
          {!isAuthPage && <Header/>}
          <div className={isAuthPage ? 'page-content auth-page-shell' : 'page-content'}>
         <Routes>
-          <Route path='/' element= {<MainPage/>}></Route>
+          <Route path='/' element= {<ViewMetrics/>}></Route>
           <Route path='/auth' element= {<AuthPage/>}></Route>
+          <Route path='/landing' element= {<MainPage/>}></Route>
           <Route
             path='/upload'
             element={

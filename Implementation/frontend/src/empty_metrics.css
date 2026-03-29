@@ -1,59 +1,124 @@
-/* 1. The Card itself */
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.empty_state_container {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: #f8fafc;
+}
+
 .empty_state_card {
   display: flex;
   flex-direction: column;
-  align-items: center;    /* Centers icon, title, and button horizontally */
-  justify-content: center; /* Centers them vertically if needed */
+  align-items: center;
   text-align: center;
-  
-  background-color: rgba(30, 41, 59, 0.5); /* Semi-transparent navy */
-  border: 2px dashed #475569; /* Dashed border suggests 'Empty Slot' */
-  border-radius: 16px;
-  
-  padding: 4rem;
-  max-width: 500px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 2rem;
+  max-width: 560px;
   width: 100%;
-  margin: 0 auto; /* Extra insurance for centering */
+  margin: 0 auto;
+  gap: 1rem;
 }
 
-/* 2. The Icon spacing */
-.empty_icon_wrapper {
-  margin-bottom: 1.5rem;
-  background: rgba(148, 163, 184, 0.1);
-  padding: 20px;
-  border-radius: 50%; /* Makes a nice circular background for the icon */
+.empty_state_card h1 {
+  color: #e2e8f0;
+  font-size: 2rem;
+  margin: 0;
 }
 
-/* 3. The Text (Ensuring it's visible on Navy) */
 .empty_state_card h2 {
-  color: #f8fafc; /* Near white */
-  font-size: 1.75rem;
-  margin-bottom: 1rem;
+  color: #f8fafc;
+  font-size: 1.5rem;
+  margin: 0.5rem 0;
 }
 
 .empty_state_card p {
-  color: #94a3b8; /* Muted slate/grey */
+  color: #cbd5e1;
   font-size: 1.1rem;
   line-height: 1.6;
-  margin-bottom: 2rem;
+  margin-bottom: 1.2rem;
+  max-width: 760px;
 }
 
-/* 4. The Button */
+.empty_icon_wrapper {
+  margin-bottom: 1rem;
+  background: #e0f2fe;
+  padding: 14px;
+  border-radius: 50%;
+}
+
+.empty_state_card h1 {
+  color: #0f172a;
+  font-size: 1.75rem;
+  margin: 0;
+}
+
+.empty_state_card h2 {
+  color: #334155;
+  font-size: 1.2rem;
+  margin: 0.2rem 0;
+}
+
+.empty_state_card p {
+  color: #64748b;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
 .btn_primary_large {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
   background-color: #2563eb;
   color: white;
-  padding: 0.8rem 1.5rem;
+  padding: 0.7rem 1.25rem;
   border: none;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .btn_primary_large:hover {
   background-color: #1d4ed8;
   transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+}
+
+.feature_card {
+  background: rgba(148, 163, 184, 0.1);
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  padding: 1rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.feature_icon {
+  margin-bottom: 0.5rem;
+  background: rgba(59, 130, 246, 0.18);
+  border-radius: 999px;
+  padding: 0.35rem;
+}
+
+.feature_card h3 {
+  margin: 0.25rem 0;
+  font-size: 1rem;
+  color: #e2e8f0;
+}
+
+.feature_card p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.95rem;
 }

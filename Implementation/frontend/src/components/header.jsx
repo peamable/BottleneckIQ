@@ -60,7 +60,7 @@ const Header = ({ uploadIdFromUrl }) => {
     return (
         <nav className="main-header">
             {/* LEFT SIDE: The Logo */}
-            <Link to="/" className="logo-section">
+            <Link to="/landing" className="logo-section">
                 <div className="logo-icon">
                 <Activity size={24} color="#ffffff" />
                 </div>

@@ -22,6 +22,7 @@ const MainPage = () => {
             title: 'Insights',
             desc: 'Get actionable Insights',
             icon:<Lightbulb size= {32} color= "#2563eb" />,
+            path: '/insights'
         }
     ];
 
