@@ -3,6 +3,13 @@ import numpy as np
 from sqlalchemy import text
 import json
 from app.core.database import engine
+import os
+import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestRegressor
 
 
 
@@ -176,6 +183,141 @@ def generate_hourly_aggregates(upload_id: int, batch_id: str | None = None):
         return f"Successfully generated tomporal summary. Rows: {len(final_df)}"
     except Exception as e:
         return f"Error: {e}"
+
+
+def train_volume_model():
+    """
+    Fetches historical data from temporal_summary, prepares lagged features,
+    trains a Random Forest model for volume prediction, and saves the pipeline.
+    """
+    query = text("SELECT * FROM temporal_summary ORDER BY upload_id, day_of_week, hour_of_day")
+    
+    with engine.connect() as conn:
+        df = pd.read_sql(query, conn)
+        
+    if df.empty:
+        return "No data available to train the model."
+        
+    # 1. Bucket by 4-hour time windows
+    df['hour_of_day'] = pd.to_numeric(df['hour_of_day'], errors='coerce')
+    df['time_window'] = df['hour_of_day'] // 4
+    
+    data_binned = df.groupby(['upload_id', 'day_of_week', 'time_window'], as_index=False).agg({
+        'total_volume': 'sum',
+        'acuity_1': 'sum',
+        'acuity_2': 'sum',
+        'acuity_3': 'sum',
+        'acuity_4': 'sum',
+        'acuity_5': 'sum',
+        'month_of_year': 'first'
+    })
+    
+    # 2. Feature Engineering: Lagging
+    data_binned['prev_volume'] = data_binned.groupby('upload_id')['total_volume'].shift(1)
+    for i in range(1, 6):
+        data_binned[f'prev_acuity_{i}'] = data_binned.groupby('upload_id')[f'acuity_{i}'].shift(1)
+        
+    data_clean = data_binned.dropna().copy()
+    
+    if data_clean.empty:
+        return "Not enough data to create lagged features for training."
+
+    # 3. Define features and target
+    categorical_features = ['day_of_week', 'time_window']
+    numeric_features = [
+        'month_of_year', 'prev_volume', 
+        'prev_acuity_1', 'prev_acuity_2', 'prev_acuity_3', 'prev_acuity_4', 'prev_acuity_5'
+    ]
+    
+    X = data_clean[categorical_features + numeric_features]
+    y = data_clean['total_volume']
+    
+    # 4. Preprocessing Pipeline
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features),
+            ('num', StandardScaler(), numeric_features)
+        ]
+    )
+    
+    # 5. Pipeline with Random Forest
+    pipeline = Pipeline(steps=[
+        ('preprocessor', preprocessor),
+        ('model', RandomForestRegressor(n_estimators=100, random_state=42))
+    ])
+    
+    # 6. Train Model
+    pipeline.fit(X, y)
+    
+    # 7. Export Model
+    export_path = os.path.join(os.path.dirname(__file__), 'volume_prediction_pipeline.joblib')
+    joblib.dump(pipeline, export_path)
+    
+    r2 = pipeline.score(X, y)
+    return f"Model successfully trained and saved to '{export_path}'. R2 Score: {r2:.4f}"
+
+
+def predict_next_volume(upload_id: int):
+    """
+    Predicts the patient volume for the next 4-hour window using the most recent 
+    window's data from the given upload_id.
+    """
+    model_path = os.path.join(os.path.dirname(__file__), 'volume_prediction_pipeline.joblib')
+    if not os.path.exists(model_path):
+        return {"error": "Prediction model not found. Please train it first."}
+        
+    pipeline = joblib.load(model_path)
+    
+    query = text("SELECT * FROM temporal_summary WHERE upload_id = :uid")
+    with engine.connect() as conn:
+        df = pd.read_sql(query, conn, params={"uid": upload_id})
+        
+    if df.empty:
+        return {"error": f"No data found for upload_id={upload_id}"}
+        
+    df['hour_of_day'] = pd.to_numeric(df['hour_of_day'], errors='coerce')
+    df['time_window'] = df['hour_of_day'] // 4
+    
+    data_binned = df.groupby(['day_of_week', 'time_window'], as_index=False).agg({
+        'total_volume': 'sum',
+        'acuity_1': 'sum',
+        'acuity_2': 'sum',
+        'acuity_3': 'sum',
+        'acuity_4': 'sum',
+        'acuity_5': 'sum',
+        'month_of_year': 'first'
+    })
+    
+    data_binned = data_binned.sort_values(by=['day_of_week', 'time_window'])
+    last_window = data_binned.iloc[-1]
+    
+    current_day = last_window['day_of_week']
+    current_window = last_window['time_window']
+    current_month = last_window['month_of_year']
+    
+    next_window = (current_window + 1) % 6
+    next_day = current_day if next_window > 0 else (current_day % 7) + 1
+    
+    input_data = pd.DataFrame([{
+        'day_of_week': next_day,
+        'time_window': next_window,
+        'month_of_year': current_month,
+        'prev_volume': last_window['total_volume'],
+        'prev_acuity_1': last_window['acuity_1'],
+        'prev_acuity_2': last_window['acuity_2'],
+        'prev_acuity_3': last_window['acuity_3'],
+        'prev_acuity_4': last_window['acuity_4'],
+        'prev_acuity_5': last_window['acuity_5']
+    }])
+    
+    predicted_volume = pipeline.predict(input_data)[0]
+    
+    return {
+        "current_window": int(current_window),
+        "target_window": int(next_window),
+        "target_day_of_week": int(next_day),
+        "predicted_volume": round(predicted_volume)
+    }
 
 if __name__ == "__main__":
    # print(calculate_and_store_metrics())
