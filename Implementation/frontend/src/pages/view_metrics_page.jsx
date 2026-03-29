@@ -93,6 +93,7 @@ const ViewMetrics = () => {
 
         try {
           const uploadId = location.state?.upload_id;
+
          
           const dashboardUrl = uploadId
             ? `http://localhost:8000/metrics/dashboard?upload_id=${uploadId}`
@@ -116,6 +117,8 @@ const ViewMetrics = () => {
             fetch(trendUrl)
           ]);
 
+          console.log("Fetching from:", dashboardUrl);
+
           if (!dashboardResponse.ok) {
             if (dashboardResponse.status === 404) {
               setHasNoMetrics(true);
@@ -127,7 +130,7 @@ const ViewMetrics = () => {
           }
 
           const dashboardPayload = await dashboardResponse.json();
-          const metrics = dashboardPayload.metrics ?? [];
+          const metrics = dashboardPayload.summary?.summary || dashboardPayload.summary || [];
           const hourlyPayload = hourlyResponse.ok ? await hourlyResponse.json() : { volume_chart: [] };
           const trendPayload = await trendResponse.json();
 
@@ -151,11 +154,16 @@ const ViewMetrics = () => {
         const metricCard = (metricNames) => {
           const keys = Array.isArray(metricNames) ? metricNames : [metricNames];
           const foundMetric = keys.map((name) => metricByName[name]).find(Boolean);
-          const value = foundMetric?.avg_value;
+          // const value = foundMetric?.avg_value;
+          // return {
+          //   value: value != null ? Number(value).toFixed(1) : "--",
+          //   direction: "flat",
+          //   trend: 0
+          // };
           return {
-            value: value != null ? Number(value).toFixed(1) : "--",
-            direction: "flat",
-            trend: 0
+            value: foundMetric?.avg_value != null ? Number(foundMetric.avg_value).toFixed(1) : "--",
+            direction: foundMetric?.direction ?? "stable",
+            trend: foundMetric?.trend ?? 0
           };
         };
 
@@ -195,11 +203,16 @@ const ViewMetrics = () => {
           ...mockData,
           summary: {
             ...mockData.summary,
-            avg_stay: {
-              value: averageStay != null ? Number(averageStay).toFixed(1) : "--",
-              direction: "flat",
-              trend: 0
-            },
+            // avg_stay: {
+            //   value: averageStay != null ? Number(averageStay).toFixed(1) : "--",
+            //   direction: "flat",
+            //   trend: 0
+            // },
+              avg_stay: {
+                value: averageStay != null ? Number(averageStay).toFixed(1) : "--",
+                direction: metricByName.total_ed_stay_time?.direction ?? "stable",
+                trend: metricByName.total_ed_stay_time?.trend ?? 0
+              },
             time_to_triage: metricCard("time_to_triage"),
             time_to_vital: metricCard("time_to_vital"),
             time_to_medrecon: metricCard("time_to_medrecon"),
@@ -277,7 +290,7 @@ const ViewMetrics = () => {
                 <small className="stat_unit">m</small>
               </span>
               <span className={`trend_indicator ${getTrendClass(dashboardData?.summary.avg_stay.direction)}`}>
-                {getTrendIcon(dashboardData?.summary.avg_stay.direction)} {dashboardData?.summary.avg_stay.trend}m
+                {getTrendIcon(dashboardData?.summary.avg_stay.direction)} {dashboardData?.summary.avg_stay.trend}% {/* change unit to % from minutes since these are percentile metrics */}
               </span>
             </div>
           </div>
@@ -292,10 +305,10 @@ const ViewMetrics = () => {
                 <div className="card_body_mini">
                   <span className="stat_value_large">
                     {data?.value ?? '--'}
-                    <small className="stat_unit">m</small>
+                    <small className="stat_unit">m</small> {/* change unit to % from minutes since these are percentile metrics */}
                   </span>
                   <span className={`trend_indicator ${getTrendClass(data?.direction)}`}>
-                    {getTrendIcon(data?.direction)} {data?.trend}m
+                    {getTrendIcon(data?.direction)} {data?.trend}% {/* change unit to % from minutes since these are percentile metrics */}
                   </span>
                 </div>
               </div>

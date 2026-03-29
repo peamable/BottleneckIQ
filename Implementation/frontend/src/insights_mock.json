@@ -55,6 +55,17 @@
     { "volume": 48, "p90_wait": 210 },
     { "volume": 55, "p90_wait": 240 }, 
     { "volume": 62, "p90_wait": 275 }
+  ],
+  "disposition_chart": [
+    { "disposition": "admitted", "time_to_triage": 155, "time_to_vital": 135, "time_to_medrecon": 129, "time_to_dispen": 120, "time_to_discharge": 124, "avg_total_ed_stay_time": 650 },
+    { "disposition": "home", "time_to_triage": 125, "time_to_vital": 100, "time_to_medrecon": 112, "time_to_dispen": 117, "time_to_discharge": 102, "avg_total_ed_stay_time": 750 }
+  ],
+  "acuity_benchmarks": [
+    { "name": "Level 1 (Resuscitation)", "ref_esi_avg": "45m", "dept_avg": "45m", "diff": "-140m", "type": "good", "color": "#2563eb"},
+    { "name": "Level 2 (Emergent)", "ref_esi_avg": "210m", "dept_avg": "210m", "diff": "+25m", "type": "warning", "color": "#ef4444" },
+    { "name": "Level 3 (Urgent)", "ref_esi_avg": "195m", "dept_avg": "195m", "diff": "+10m", "type": "warning", "color": "#f59e0b" },
+    { "name": "Level 4 (Less Urgent)", "ref_esi_avg": "115m", "dept_avg": "115m", "diff": "-70m", "type": "good", "color": "#10b981" },
+    { "name": "Level 5 (Non-Urgent)", "ref_esi_avg": "90m", "dept_avg": "90m", "diff": "-95m", "type": "good", "color": "#94a3b8" }
   ]
 
  }

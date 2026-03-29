@@ -89,6 +89,14 @@ def calculate_and_store_metrics(upload_id: int, batch_id: str | None = None):
             :metric_name, :avg_value, :p90_value, :p75_value, :p99_value, 
             :min_value, :max_value, :stay_time_per_acuity, :upload_id
         )
+        ON DUPLICATE KEY UPDATE
+            avg_value = VALUES(avg_value),
+            p90_value = VALUES(p90_value),
+            p75_value = VALUES(p75_value),
+            p99_value = VALUES(p99_value),
+            min_value = VALUES(min_value),
+            max_value = VALUES(max_value),
+            stay_time_per_acuity = VALUES(stay_time_per_acuity)
     """)
 
     try:
@@ -121,7 +129,9 @@ def generate_hourly_aggregates(upload_id: int, batch_id: str | None = None):
             si.scale_level,
             s.stay_id
         FROM ed_stay s
-        JOIN stay_info si ON s.stay_id = si.stay_id
+        JOIN stay_info si
+          ON s.stay_id = si.stay_id
+         AND s.upload_id = si.upload_id
         WHERE s.upload_id = :uid 
           AND s.activity = 'entry'
     """)
@@ -165,6 +175,10 @@ def generate_hourly_aggregates(upload_id: int, batch_id: str | None = None):
     
     # 6. Insert into Database
     try:
+        with engine.begin() as conn:
+            # Rebuilding the upload should replace this upload's existing hourly summary.
+            conn.execute(text("DELETE FROM temporal_summary WHERE upload_id = :uid"), {"uid": upload_id})
+
         final_df.to_sql('temporal_summary', engine, if_exists='append', index=False)
         return f"Successfully generated tomporal summary. Rows: {len(final_df)}"
     except Exception as e:
