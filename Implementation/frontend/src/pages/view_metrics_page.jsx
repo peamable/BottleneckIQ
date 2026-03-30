@@ -13,12 +13,15 @@ import mockData from "../view_metrics_mock.json";
 
 const ViewMetrics = () => {
   const location = useLocation();
+  const requestedUploadId =
+    location.state?.upload_id ?? new URLSearchParams(location.search).get('upload_id');
   // These states would be populated by your 'metrics' table row
   const [selectedStage, setSelectedStage] = useState('time_to_vital');
   const [lookback, setLookback] = useState(10);
   const [isLoading, setIsLoading] = useState(true);
   const [hasNoMetrics, setHasNoMetrics] = useState(false);
   const [acuityMetrics, setAcuityMetrics] = useState([]);
+  const [bottleneckSummary, setBottleneckSummary] = useState(null);
   //for the data cards
   const cardConfigs = [
     { label: "TIME → TRIAGE", key: "time_to_triage" },
@@ -92,7 +95,7 @@ const ViewMetrics = () => {
         }*/
 
         try {
-          const uploadId = location.state?.upload_id;
+          const uploadId = requestedUploadId;
 
          
           const dashboardUrl = uploadId
@@ -109,12 +112,16 @@ const ViewMetrics = () => {
             : "http://localhost:8000/metrics/hourly-aggregates";
 
           const trendUrl = `http://localhost:8000/metrics/performance-trend?lookback=${lookback}`;
+          const bottleneckUrl = uploadId
+            ? `http://localhost:8000/metrics/bottleneck-analysis?upload_id=${uploadId}`
+            : "http://localhost:8000/metrics/bottleneck-analysis";
 
-          const [dashboardResponse, acuityResponse, hourlyResponse, trendResponse] = await Promise.all([
+          const [dashboardResponse, acuityResponse, hourlyResponse, trendResponse, bottleneckResponse] = await Promise.all([
             fetch(dashboardUrl),
             fetch(acuityUrl),
             fetch(hourlyUrl),
-            fetch(trendUrl)
+            fetch(trendUrl),
+            fetch(bottleneckUrl)
           ]);
 
           console.log("Fetching from:", dashboardUrl);
@@ -133,6 +140,9 @@ const ViewMetrics = () => {
           const metrics = dashboardPayload.summary?.summary || dashboardPayload.summary || [];
           const hourlyPayload = hourlyResponse.ok ? await hourlyResponse.json() : { volume_chart: [] };
           const trendPayload = await trendResponse.json();
+          const bottleneckPayload = bottleneckResponse.ok
+            ? await bottleneckResponse.json()
+            : { overall_status: "No Data", banner_message: "No bottleneck data available.", stages: [] };
 
           let acuityPayload = { acuity_benchmarks: [] };
           if (acuityResponse.ok) {
@@ -197,7 +207,8 @@ const ViewMetrics = () => {
             };
           });
 */
-        setAcuityMetrics(acuityPayload.acuity_benchmarks ?? []);
+          setAcuityMetrics(acuityPayload.acuity_benchmarks ?? []);
+          setBottleneckSummary(bottleneckPayload);
 
         setDashboardData({
           ...mockData,
@@ -245,13 +256,18 @@ const ViewMetrics = () => {
         console.error(error);
         setDashboardData(mockData);
         setAcuityMetrics(mockData.acuity_benchmarks ?? []);
+        setBottleneckSummary({
+          overall_status: "No Data",
+          banner_message: "No bottleneck data available.",
+          stages: [],
+        });
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchDashboardMetrics();
-  }, [location.state?.upload_id]);
+  }, [requestedUploadId, lookback]);
 
   // 1. Determine which keys to pull from the JSON based on state
     const p90Key = `${selectedTrendStage}_p90`;
@@ -259,6 +275,11 @@ const ViewMetrics = () => {
     const p50Key = `${selectedTrendStage}_p50`;
     const baselineLabel = "AVERAGE FLOW (P50)";
     const focusLabel = `${selectedStage.replace(/_/g, ' ').toUpperCase()} (${percentileLevel.toUpperCase()})`;
+    const bottleneckStageKeys = new Set(
+      (bottleneckSummary?.stages ?? [])
+        .filter((stage) => stage.status === "Bottleneck")
+        .map((stage) => stage.stage)
+    );
 
   if (isLoading) {
     return <div className="view_metrics_page_wrapper">Loading dashboard metrics...</div>;
@@ -274,7 +295,7 @@ const ViewMetrics = () => {
         
         {/* 1. SYSTEM STATUS BANNER */}
         <section className="dashboard_header_section">
-          <BottleneckBanner /> 
+          <BottleneckBanner summary={bottleneckSummary} /> 
         </section>
 
         
@@ -299,8 +320,9 @@ const ViewMetrics = () => {
 
           {cardConfigs.map((card) => {
             const data = dashboardData?.summary[card.key];
+            const isBottleneckStage = bottleneckStageKeys.has(card.key);
             return (
-              <div className="metric_card_mini" key={card.key}>
+              <div className={`metric_card_mini ${isBottleneckStage ? 'card_bottleneck' : ''}`} key={card.key}>
                 <span className="stat_label_mini">{card.label}</span>
                 <div className="card_body_mini">
                   <span className="stat_value_large">

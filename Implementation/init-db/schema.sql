@@ -87,6 +87,21 @@ CREATE TABLE `metrics` (
   CONSTRAINT `metrics_ibfk_1` FOREIGN KEY (`upload_id`) REFERENCES `upload_history` (`upload_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+DROP TABLE IF EXISTS `bottleneck_status_counts`;
+CREATE TABLE `bottleneck_status_counts` (
+  `bottleneck_status_count_id` bigint NOT NULL AUTO_INCREMENT,
+  `upload_id` bigint NOT NULL,
+  `stage` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `patient_count` int NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`bottleneck_status_count_id`),
+  UNIQUE KEY `idx_unq_bottleneck_upload_stage_status` (`upload_id`,`stage`,`status`),
+  KEY `idx_bottleneck_status_upload` (`upload_id`),
+  CONSTRAINT `bottleneck_status_counts_ibfk_1` FOREIGN KEY (`upload_id`) REFERENCES `upload_history` (`upload_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 
 DROP TABLE IF EXISTS `segment_summaries`;
 CREATE TABLE `segment_summaries` (

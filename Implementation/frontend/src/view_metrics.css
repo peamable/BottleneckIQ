@@ -47,6 +47,29 @@
   transform: translateY(-2px);
 }
 
+.metric_card_mini.card_bottleneck {
+  background: #E11D48;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-left: 6px solid #f59e0b;
+  box-shadow: 0 6px 18px rgba(225, 29, 72, 0.28);
+}
+
+.metric_card_mini.card_bottleneck .stat_label_mini {
+  color: #fbbf24;
+}
+
+.metric_card_mini.card_bottleneck .stat_value_large {
+  color: #ffffff;
+}
+
+.metric_card_mini.card_bottleneck .stat_unit {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.metric_card_mini.card_bottleneck .trend_indicator {
+  color: #ffffff;
+}
+
 /* --- TREND INDICATORS --- */
 .trend_indicator {
   font-size: 0.8rem;

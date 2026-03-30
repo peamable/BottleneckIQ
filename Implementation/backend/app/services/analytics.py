@@ -319,7 +319,204 @@ def predict_next_volume(upload_id: int):
         "predicted_volume": round(predicted_volume)
     }
 
+
+def _ensure_bottleneck_status_counts_table() -> None:
+    create_sql = text("""
+        CREATE TABLE IF NOT EXISTS bottleneck_status_counts (
+            bottleneck_status_count_id BIGINT NOT NULL AUTO_INCREMENT,
+            upload_id BIGINT NOT NULL,
+            stage VARCHAR(250) NOT NULL,
+            status VARCHAR(50) NOT NULL,
+            patient_count INT NOT NULL DEFAULT 0,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (bottleneck_status_count_id),
+            UNIQUE KEY idx_unq_bottleneck_upload_stage_status (upload_id, stage, status),
+            KEY idx_bottleneck_status_upload (upload_id),
+            CONSTRAINT fk_bottleneck_status_upload
+                FOREIGN KEY (upload_id) REFERENCES upload_history (upload_id)
+                ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    """)
+
+    with engine.begin() as conn:
+        conn.execute(create_sql)
+
+
+def get_bottleneck_status_counts(upload_id: int):
+    _ensure_bottleneck_status_counts_table()
+
+    query = text("""
+        SELECT stage, status, patient_count
+        FROM bottleneck_status_counts
+        WHERE upload_id = :upload_id
+        ORDER BY stage, status
+    """)
+
+    with engine.connect() as conn:
+        rows = conn.execute(query, {"upload_id": upload_id}).mappings().all()
+
+    return [dict(row) for row in rows]
+
 if __name__ == "__main__":
    # print(calculate_and_store_metrics())
     print(calculate_and_store_metrics(upload_id=1))
     print(generate_hourly_aggregates(upload_id=1))
+
+# identify bottleneck in each stage of ED stay process
+def bottleneck_analysis(upload_id: int, batch_id: str | None = None):
+    """
+    Compare each patient's stage timings against configured thresholds and
+    return both patient-level statuses and per-stage status counts.
+    """
+    stage_columns = [
+        "time_to_triage",
+        "time_to_vital",
+        "time_to_medrecon",
+        "time_to_dispen",
+        "time_to_discharge",
+    ]
+    status_order = [
+        "Normal",
+        "Needs Improvement",
+        "Bottleneck",
+        "No Data",
+        "No Threshold",
+    ]
+
+    event_query = text("""
+        SELECT
+            stay_id,
+            time_to_triage,
+            time_to_vital,
+            time_to_medrecon,
+            time_to_dispen,
+            time_to_discharge
+        FROM event_log
+        WHERE upload_id = :upload_id
+        ORDER BY stay_id
+    """)
+    threshold_query = text("""
+        SELECT stage, threshold_type, threshold_value
+        FROM thresholds
+    """)
+
+    with engine.connect() as conn:
+        events_df = pd.read_sql(event_query, conn, params={"upload_id": upload_id})
+        thresholds_df = pd.read_sql(threshold_query, conn)
+
+    if events_df.empty:
+        return {
+            "upload_id": upload_id,
+            "patients": [],
+            "status_counts": [],
+            "message": f"No data found for upload_id={upload_id}."
+        }
+
+    threshold_map = {}
+    if not thresholds_df.empty:
+        for _, row in thresholds_df.iterrows():
+            stage = str(row.get("stage", "")).strip()
+            threshold_type = str(row.get("threshold_type", "")).strip().lower()
+            threshold_value = pd.to_numeric(row.get("threshold_value"), errors="coerce")
+
+            if not stage or pd.isna(threshold_value) or threshold_type not in {"p75", "p90"}:
+                continue
+
+            threshold_map.setdefault(stage, {})[threshold_type] = float(threshold_value)
+
+    def classify_status(value, stage_name: str) -> str:
+        if pd.isna(value):
+            return "No Data"
+
+        stage_thresholds = threshold_map.get(stage_name, {})
+        p75 = stage_thresholds.get("p75")
+        p90 = stage_thresholds.get("p90")
+
+        if p75 is None and p90 is None:
+            return "No Threshold"
+        if p90 is not None and float(value) > p90:
+            return "Bottleneck"
+        if p75 is not None and float(value) > p75:
+            return "Needs Improvement"
+        return "Normal"
+
+    patient_results = []
+    status_counts_map = {}
+
+    for _, row in events_df.iterrows():
+        patient_record = {"stay_id": int(row["stay_id"])}
+
+        for stage in stage_columns:
+            value = pd.to_numeric(row.get(stage), errors="coerce")
+            value_minutes = None if pd.isna(value) else round(float(value), 2)
+            stage_thresholds = threshold_map.get(stage, {})
+            status = classify_status(value, stage)
+
+            patient_record[stage] = {
+                "value_minutes": value_minutes,
+                "p75": stage_thresholds.get("p75"),
+                "p90": stage_thresholds.get("p90"),
+                "status": status,
+            }
+
+            count_key = (stage, status)
+            status_counts_map[count_key] = status_counts_map.get(count_key, 0) + 1
+
+        patient_results.append(patient_record)
+
+    status_counts = []
+    for stage in stage_columns:
+        for status in status_order:
+            count = status_counts_map.get((stage, status))
+            if count is not None:
+                status_counts.append({
+                    "stage": stage,
+                    "status": status,
+                    "patient_count": int(count),
+                })
+
+    return {
+        "upload_id": upload_id,
+        "patients": patient_results,
+        "status_counts": status_counts,
+    }
+
+
+def calculate_and_store_bottleneck_status_counts(upload_id: int, batch_id: str | None = None):
+    _ensure_bottleneck_status_counts_table()
+    analysis_result = bottleneck_analysis(upload_id=upload_id, batch_id=batch_id)
+    status_counts = analysis_result.get("status_counts", [])
+
+    delete_sql = text("""
+        DELETE FROM bottleneck_status_counts
+        WHERE upload_id = :upload_id
+    """)
+    upsert_sql = text("""
+        INSERT INTO bottleneck_status_counts (
+            upload_id, stage, status, patient_count
+        ) VALUES (
+            :upload_id, :stage, :status, :patient_count
+        )
+        ON DUPLICATE KEY UPDATE
+            patient_count = VALUES(patient_count)
+    """)
+
+    with engine.begin() as conn:
+        conn.execute(delete_sql, {"upload_id": upload_id})
+        if status_counts:
+            rows_to_store = [
+                {
+                    "upload_id": upload_id,
+                    "stage": row["stage"],
+                    "status": row["status"],
+                    "patient_count": int(row["patient_count"]),
+                }
+                for row in status_counts
+            ]
+            conn.execute(upsert_sql, rows_to_store)
+
+    if not status_counts:
+        return f"No bottleneck status counts found for upload_id={upload_id}."
+
+    return f"Stored {len(status_counts)} bottleneck status count rows for upload_id={upload_id}."
