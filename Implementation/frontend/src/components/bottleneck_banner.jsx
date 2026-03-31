@@ -19,8 +19,10 @@ const formatStageList = (stages = []) => {
 const BottleneckBanner = ({ summary }) => {
   const navigate = useNavigate();
   const bottleneckStages = summary?.stages?.filter((stage) => stage.status === 'Bottleneck') || [];
+  const needsImprovementStages =
+    summary?.stages?.filter((stage) => stage.status === 'Needs Improvement') || [];
   const primaryStage = bottleneckStages[0]
-    || summary?.stages?.find((stage) => stage.status === 'Needs Improvement')
+    || needsImprovementStages[0]
     || summary?.stages?.[0];
 
   const overallStatus = summary?.overall_status || 'No Data';
@@ -37,7 +39,7 @@ const BottleneckBanner = ({ summary }) => {
     toneClass = 'banner_danger';
   } else if (isNeedsImprovement && primaryStage) {
     label = 'NEEDS IMPROVEMENT';
-    headline = `Latency rising in ${formatStageName(primaryStage.stage)}`;
+    headline = `Latency rising in ${formatStageList(needsImprovementStages)}`;
     toneClass = 'banner_warning';
   } else if (overallStatus === 'Normal') {
     label = 'FLOW STABLE';
@@ -47,7 +49,7 @@ const BottleneckBanner = ({ summary }) => {
     headline = summary.banner_message;
   }
 
-  if (!isBottleneck) {
+  if (!isBottleneck && !isNeedsImprovement) {
     return (
       <div className="banner_button_only">
         <button
@@ -70,6 +72,10 @@ const BottleneckBanner = ({ summary }) => {
             {isBottleneck && bottleneckStages.length > 0 ? (
               <>
                 HIGH LATENCY IN <span className="stage_highlight">{formatStageList(bottleneckStages)}</span>
+              </>
+            ) : isNeedsImprovement && needsImprovementStages.length > 0 ? (
+              <>
+                Latency rising in <span className="stage_highlight">{formatStageList(needsImprovementStages)}</span>
               </>
             ) : (
               headline

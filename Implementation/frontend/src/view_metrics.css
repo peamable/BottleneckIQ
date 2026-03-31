@@ -50,15 +50,28 @@
 .metric_card_mini.card_bottleneck {
   background: #E11D48;
   border: 1px solid rgba(245, 158, 11, 0.4);
-  border-left: 6px solid #f59e0b;
   box-shadow: 0 6px 18px rgba(225, 29, 72, 0.28);
+}
+
+.metric_card_mini.card_needs_improvement {
+  background: #FF5F15;
+  border: 1px solid rgba(146, 64, 14, 0.4);
+  box-shadow: 0 6px 18px rgba(255, 95, 21, 0.28);
 }
 
 .metric_card_mini.card_bottleneck .stat_label_mini {
   color: #fbbf24;
 }
 
+.metric_card_mini.card_needs_improvement .stat_label_mini {
+  color: brown;
+}
+
 .metric_card_mini.card_bottleneck .stat_value_large {
+  color: #ffffff;
+}
+
+.metric_card_mini.card_needs_improvement .stat_value_large {
   color: #ffffff;
 }
 
@@ -66,7 +79,15 @@
   color: rgba(255, 255, 255, 0.88);
 }
 
+.metric_card_mini.card_needs_improvement .stat_unit {
+  color: rgba(255, 255, 255, 0.88);
+}
+
 .metric_card_mini.card_bottleneck .trend_indicator {
+  color: #ffffff;
+}
+
+.metric_card_mini.card_needs_improvement .trend_indicator {
   color: #ffffff;
 }
 

@@ -24,9 +24,19 @@
 }
 
 .banner_warning {
-  background-color: rgba(245, 158, 11, 0.15);
+  background-color: #FF5F15;
   border: 1px solid rgba(245, 158, 11, 0.4);
   border-left: 6px solid #f59e0b;
+}
+
+.banner_warning .banner_label,
+.banner_warning .banner_subtext,
+.banner_warning .stage_highlight {
+  color: rgb(53, 54, 54);
+}
+
+.banner_warning .banner_main_text {
+  color: #ffffff;
 }
 
 .banner_success {

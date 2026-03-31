@@ -116,13 +116,25 @@ const ViewMetrics = () => {
             ? `http://localhost:8000/metrics/bottleneck-analysis?upload_id=${uploadId}`
             : "http://localhost:8000/metrics/bottleneck-analysis";
 
-          const [dashboardResponse, acuityResponse, hourlyResponse, trendResponse, bottleneckResponse] = await Promise.all([
+          const [
+            dashboardResult,
+            acuityResult,
+            hourlyResult,
+            trendResult,
+            bottleneckResult
+          ] = await Promise.allSettled([
             fetch(dashboardUrl),
             fetch(acuityUrl),
             fetch(hourlyUrl),
             fetch(trendUrl),
             fetch(bottleneckUrl)
           ]);
+
+          if (dashboardResult.status !== "fulfilled") {
+            throw dashboardResult.reason ?? new Error("Failed to load dashboard metrics.");
+          }
+
+          const dashboardResponse = dashboardResult.value;
 
           console.log("Fetching from:", dashboardUrl);
 
@@ -138,16 +150,34 @@ const ViewMetrics = () => {
 
           const dashboardPayload = await dashboardResponse.json();
           const metrics = dashboardPayload.summary?.summary || dashboardPayload.summary || [];
-          const hourlyPayload = hourlyResponse.ok ? await hourlyResponse.json() : { volume_chart: [] };
-          const trendPayload = await trendResponse.json();
-          const bottleneckPayload = bottleneckResponse.ok
-            ? await bottleneckResponse.json()
-            : { overall_status: "No Data", banner_message: "No bottleneck data available.", stages: [] };
+          const defaultHourlyPayload = { volume_chart: [] };
+          const defaultTrendPayload = { trend_chart: [] };
+          const defaultBottleneckPayload = {
+            overall_status: "No Data",
+            banner_message: "No bottleneck data available.",
+            stages: [],
+          };
+          const defaultAcuityPayload = { acuity_benchmarks: [] };
 
-          let acuityPayload = { acuity_benchmarks: [] };
-          if (acuityResponse.ok) {
-            acuityPayload = await acuityResponse.json();
-          }
+          const hourlyPayload =
+            hourlyResult.status === "fulfilled" && hourlyResult.value.ok
+              ? await hourlyResult.value.json()
+              : defaultHourlyPayload;
+
+          const trendPayload =
+            trendResult.status === "fulfilled" && trendResult.value.ok
+              ? await trendResult.value.json()
+              : defaultTrendPayload;
+
+          const bottleneckPayload =
+            bottleneckResult.status === "fulfilled" && bottleneckResult.value.ok
+              ? await bottleneckResult.value.json()
+              : defaultBottleneckPayload;
+
+          const acuityPayload =
+            acuityResult.status === "fulfilled" && acuityResult.value.ok
+              ? await acuityResult.value.json()
+              : defaultAcuityPayload;
 
           if (!metrics.length) {
             setHasNoMetrics(true);
@@ -280,6 +310,11 @@ const ViewMetrics = () => {
         .filter((stage) => stage.status === "Bottleneck")
         .map((stage) => stage.stage)
     );
+    const needsImprovementStageKeys = new Set(
+      (bottleneckSummary?.stages ?? [])
+        .filter((stage) => stage.status === "Needs Improvement")
+        .map((stage) => stage.stage)
+    );
 
   if (isLoading) {
     return <div className="view_metrics_page_wrapper">Loading dashboard metrics...</div>;
@@ -321,8 +356,14 @@ const ViewMetrics = () => {
           {cardConfigs.map((card) => {
             const data = dashboardData?.summary[card.key];
             const isBottleneckStage = bottleneckStageKeys.has(card.key);
+            const isNeedsImprovementStage = needsImprovementStageKeys.has(card.key);
+            const statusClass = isBottleneckStage
+              ? 'card_bottleneck'
+              : isNeedsImprovementStage
+                ? 'card_needs_improvement'
+                : '';
             return (
-              <div className={`metric_card_mini ${isBottleneckStage ? 'card_bottleneck' : ''}`} key={card.key}>
+              <div className={`metric_card_mini ${statusClass}`} key={card.key}>
                 <span className="stat_label_mini">{card.label}</span>
                 <div className="card_body_mini">
                   <span className="stat_value_large">
