@@ -23,7 +23,72 @@ def get_latest_upload_id() -> Optional[int]:
     with engine.connect() as conn:
         result = conn.execute(query).mappings().first()
         return result["upload_id"] if result else None
-    
+
+
+def get_temporal_heatmap(upload_id: Optional[int] = None, lookback: int = 3) -> dict:
+    """Builds a 7x4 daily heatmap (4x6h slices) for patient volume using temporal_summary from recent uploads."""
+    effective_id = upload_id or get_latest_upload_id()
+    day_labels = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    slice_labels = ['Dawn ', 'Morning ', 'Afternoon ', 'Night ']
+
+    if not effective_id:
+        return {
+            "upload_id": None,
+            "day_labels": day_labels,
+            "slice_labels": slice_labels,
+            "volume_matrix": [[0,0,0,0] for _ in range(7)]
+        }
+
+    # Get the last N completed upload IDs to aggregate recent patterns
+    recent_uploads_query = text("""
+        SELECT upload_id
+        FROM upload_history
+        WHERE status = 'completed'
+        ORDER BY upload_id DESC
+        LIMIT :lookback
+    """)
+
+    with engine.connect() as conn:
+        recent_rows = conn.execute(recent_uploads_query, {"lookback": lookback}).mappings().all()
+        recent_upload_ids = [row['upload_id'] for row in recent_rows]
+
+    if not recent_upload_ids:
+        return {
+            "upload_id": effective_id,
+            "day_labels": day_labels,
+            "slice_labels": slice_labels,
+            "volume_matrix": [[0,0,0,0] for _ in range(7)]
+        }
+
+    query = text("""
+        SELECT
+            ((day_of_week - 1) % 7) AS dow,
+            FLOOR(hour_of_day / 6) AS slice,
+            AVG(total_volume) AS avg_volume
+        FROM temporal_summary
+        WHERE upload_id IN :u_ids
+        GROUP BY dow, slice
+        ORDER BY dow, slice;
+    """)
+
+    with engine.connect() as conn:
+        rows = conn.execute(query, {"u_ids": tuple(recent_upload_ids)}).mappings().all()
+
+    volume_matrix = [[0, 0, 0, 0] for _ in range(7)]
+
+    for row in rows:
+        dow = int(row['dow']) if row['dow'] is not None else 0
+        slice_idx = int(row['slice']) if row['slice'] is not None else 0
+        if 0 <= dow <= 6 and 0 <= slice_idx <= 3:
+            volume_matrix[dow][slice_idx] = round(float(row['avg_volume'] or 0))
+
+    return {
+        "upload_id": effective_id,
+        "day_labels": day_labels,
+        "slice_labels": slice_labels,
+        "volume_matrix": volume_matrix
+    }
+
 
 # disposition mix pie chart visualization
 def get_disposition_mix(upload_id: int) -> dict:

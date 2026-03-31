@@ -5,6 +5,7 @@ from app.core.database import engine
 from app.router.upload import router as upload_router
 from app.router.metrics import router as metrics_router
 from app.router.insights import router as insights_router
+from app.router.reports import router as reports_router
 
 
 
@@ -52,3 +53,4 @@ def list_db_tables():
 app.include_router(upload_router)
 app.include_router(metrics_router)
 app.include_router(insights_router)
+app.include_router(reports_router)

@@ -61,6 +61,7 @@ function buildTrendLine(points) {
 
 const InsightsPage = () => {
   const [insightsData, setInsightsData] = useState(mockData); // Initially set to mock data for development
+  const [heatmapData, setHeatmapData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -71,7 +72,7 @@ useEffect(() => {
     try {
       setLoading(true);
 
-      const [logisticsRes, demographicsRes, bottlenecksRes, volumeEfficiencyRes, dispositionsRes, acuityRes] = await Promise.all([
+      const [logisticsRes, demographicsRes, bottlenecksRes, volumeEfficiencyRes, dispositionsRes, acuityRes, temporalHeatmapRes] = await Promise.all([
         fetch('http://localhost:8000/insights/logistics_root_cause', {
           signal: controller.signal
         }),
@@ -89,6 +90,9 @@ useEffect(() => {
         }),
         fetch('http://localhost:8000/insights/acuity_level_analysis', {
           signal: controller.signal
+        }),
+        fetch('http://localhost:8000/insights/temporal_heatmap', {
+          signal: controller.signal
         })
       ]);
       if (!logisticsRes.ok) throw new Error(`Logistics Error: ${logisticsRes.status}`);
@@ -98,13 +102,14 @@ useEffect(() => {
       if (!dispositionsRes.ok) throw new Error(`Disposition Comparison Error: ${dispositionsRes.status}`);
       if (!acuityRes.ok) throw new Error(`Acuity Level Analysis Error: ${acuityRes.status}`);
 
-
       const logisticsPayload = await logisticsRes.json();
       const demographicsPayload = await demographicsRes.json();
       const bottlenecksPayload = await bottlenecksRes.json();
       const volumeEfficiencyPayload = await volumeEfficiencyRes.json();
       const dispositionsPayload = await dispositionsRes.json();
       const acuityPayload = await acuityRes.json();
+      const temporalHeatmapPayload = await temporalHeatmapRes.json();
+      setHeatmapData(temporalHeatmapPayload || null);
 
       setInsightsData(prev => ({
         ...prev,
@@ -150,6 +155,22 @@ useEffect(() => {
   const dispositionTotalCount = dispositionMix.every((item) => Number.isFinite(Number(item.count)))
     ? dispositionMix.reduce((total, item) => total + Number(item.count), 0)
     : null;
+
+  // Helper function to transform temporal_summary heatmap data into display format
+  const generateHeatmapData = () => {
+    const defaultDayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const defaultSliceLabels = ['Dawn ', 'Morning', 'Afternoon', 'Night '];
+    const defaultMatrix = Array(7).fill(null).map(() => Array(4).fill(0));
+
+    const dayNames = heatmapData?.day_labels || mockData?.heatmap_data?.y_days || defaultDayNames;
+    const sliceLabels = heatmapData?.slice_labels || mockData?.heatmap_data?.x_hours || defaultSliceLabels;
+    const volumeMatrix = heatmapData?.volume_matrix || mockData?.heatmap_data?.z_matrix || defaultMatrix;
+
+    return { matrix: volumeMatrix, dayNames, sliceLabels };
+  };
+
+  const { matrix: heatmapMatrix, dayNames, sliceLabels } = generateHeatmapData();
+
 
     return (
     <div className="insights_container">
@@ -206,31 +227,38 @@ useEffect(() => {
       </section>
 
       <div className="insights_middle_row">
-        {/* SECTION 2: LOGISTICS HEATMAP */}
+        {/* SECTION 2: TEMPORAL HEATMAP */}
         <section className="insight_block heatmap_section">
-          <h3>Temporal Bottleneck Patterns (P90 Gap)</h3>
-          {/* Plotly Heatmap */}
+          <div className="heatmap_header">
+            <h3>Temporal Patterns by Day </h3>
+            {/* <small style={{ color: '#64748b' }}>Aggregated to 4 slices: Dawn, Morning, Afternoon, Night.</small> */}
+          </div>
+
           <Plot
-  data={[
-    {
-      z: [[10, 20, 30], [20, 50, 60], [30, 60, 90]], // P90 Values
-      x: ['Morning', 'Afternoon', 'Evening'],
-      y: ['Monday', 'Tuesday', 'Wednesday'],
-      type: 'heatmap',
-      colorscale: 'Viridis',
-      showscale: true,
-    }
-  ]}
-  layout={{ 
-    title: 'Peak Bottleneck Hours',
-    autosize: true,
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(0,0,0,0)',
-    margin: { t: 40, b: 40, l: 60, r: 10 }
-  }}
-  useResizeHandler={true}
-  style={{ width: '100%', height: '300px' }}
-/>
+            data={[
+              {
+                  z: heatmapMatrix,
+                  x: sliceLabels,
+                  y: dayNames,
+                  type: 'heatmap',
+                  colorscale: 'Viridis',
+                  showscale: true,
+                  colorbar: { title: 'Patient Volume' },
+                  hovertemplate: '<b>%{y}</b><br>%{x}<br>Volume: %{z}<extra></extra>'
+              }
+            ]}
+              layout={{
+                title: 'Patient Volume by 6-hour Slice & Day of Week',
+                autosize: true,
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                margin: { t: 60, b: 60, l: 120, r: 10 },
+                xaxis: { title: '6-hour Time Slice' },
+                yaxis: { title: 'Day of Week' }
+              }}
+              useResizeHandler={true}
+              style={{ width: '100%', height: '500px' }}
+            />
         </section>
 
         {/* SECTION 3: ARRIVAL & DISPOSITION */}
