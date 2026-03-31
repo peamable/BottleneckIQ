@@ -41,6 +41,25 @@ const ViewMetrics = () => {
   };
   //for the line chart
   const [percentileLevel, setPercentileLevel] = useState('p90'); // Default to P90
+  
+  // New state for filter tags in Performance Trend Analysis
+  const [activeTrendFilters, setActiveTrendFilters] = useState({
+    time_to_triage: false,
+    time_to_vital: true,
+    time_to_medrecon: false,
+    time_to_dispen: false,
+    time_to_discharge: true
+  });
+  
+  // Clinical stage configuration with colors matching Recharts
+  const clinicalStageConfig = [
+    { key: 'time_to_triage', label: 'Time to Triage', color: '#2563eb' },
+    { key: 'time_to_vital', label: 'Time to Vitals', color: '#ef4444' },
+    { key: 'time_to_medrecon', label: 'Time to MedRecon', color: '#f59e0b' },
+    { key: 'time_to_dispen', label: 'Time to Dispense', color: '#10b981' },
+    { key: 'time_to_discharge', label: 'Time to Discharge', color: '#8b5cf6' }
+  ];
+  
   const trendStageMap = {
     total_stay: "total_ed_stay_time",
     time_to_triage: "time_to_triage",
@@ -48,6 +67,14 @@ const ViewMetrics = () => {
     time_to_medrecon: "time_to_medrecon",
     time_to_dispen: "time_to_dispen",
     time_to_discharge: "time_to_discharge"
+  };
+  
+  // Handler to toggle filter tags
+  const toggleTrendFilter = (stageKey) => {
+    setActiveTrendFilters(prev => ({
+      ...prev,
+      [stageKey]: !prev[stageKey]
+    }));
   };
   const selectedTrendStage = trendStageMap[selectedStage] ?? selectedStage;
   const activeDataKey = `${selectedTrendStage}_${percentileLevel}`; //used for the line chart to determine what is shown based on user selection
@@ -319,7 +346,7 @@ const ViewMetrics = () => {
         {/* 3. NEW: DASHBOARD CONTROLS & DATA HORIZON */}
 <div className="dashboard_controls_bar">
   <div className="control_group">
-    <div className="control_item">
+    {/* <div className="control_item">
       <label>Metric Focus</label>
       <select 
         className="global_percentile_dropdown"
@@ -333,9 +360,9 @@ const ViewMetrics = () => {
         <option value="time_to_dispen">Time to Dispense</option>
         <option value="time_to_discharge">Time to Discharge</option>
       </select>
-    </div>
+    </div> */}
 
-    <div className="control_item">
+    {/* <div className="control_item">
       <label>Analysis Level</label>
       <select className="global_percentile_dropdown" value={percentileLevel}
        onChange={(e) => setPercentileLevel(e.target.value)}>
@@ -343,6 +370,27 @@ const ViewMetrics = () => {
         <option value="p75">p75 (Slowest 25%)</option>
         <option value="p50">p50 (Average Flow)</option>
       </select>
+    </div> */}
+  </div>
+
+  {/* Filter Tags Row */}
+  <div className="filter_tags_row">
+    <label className="filter_tags_label">Clinical Stages:</label>
+    <div className="filter_tags_container">
+      {clinicalStageConfig.map((stage) => (
+        <button
+          key={stage.key}
+          className={`filter_tag ${activeTrendFilters[stage.key] ? 'active' : 'inactive'}`}
+          style={{
+            backgroundColor: activeTrendFilters[stage.key] ? stage.color : 'transparent',
+            borderColor: stage.color
+          }}
+          onClick={() => toggleTrendFilter(stage.key)}
+          title={`Toggle ${stage.label}`}
+        >
+          {stage.label}
+        </button>
+      ))}
     </div>
   </div>
 
@@ -361,101 +409,57 @@ const ViewMetrics = () => {
         <section className="trend_chart_section">
           <div className="chart_controls_row">
             <h3 className="visual_header">Performance Trend Analysis</h3>
-            <div className="control_group">
-              <select 
-                className="global_percentile_dropdown"
-                value={selectedStage}
-                onChange={(e) => setSelectedStage(e.target.value)}
-              >
-                <option value="total_stay">Total Stay Time</option>
-                <option value="time_to_vital">Time to Vitals</option>
-                <option value="time_to_medrecon">Time to MedRecon</option>
-                <option value="time_to_dispen">Time to Dispense</option>
-                <option value="time_to_discharge">Time to Discharge</option>
-              </select>
-              
+            <div className="top_right_controls">
               <select 
                 className="global_percentile_dropdown"
                 value={lookback}
-                onChange={(e) => setLookback(e.target.value)}
+                onChange={(e) => setLookback(parseInt(e.target.value))}
               >
                 <option value={5}>Last 5 Uploads</option>
                 <option value={10}>Last 10 Uploads</option>
                 <option value={20}>Last 20 Uploads</option>
+              </select>
+              
+              <select 
+                className="global_percentile_dropdown"
+                value={percentileLevel}
+                onChange={(e) => setPercentileLevel(e.target.value)}
+              >
+                <option value="p90">p90 (Slowest 10%)</option>
+                <option value="p75">p75 (Slowest 25%)</option>
+                <option value="p50">p50 (Average Flow)</option>
               </select>
             </div>
           </div>
           
           <div style={{ width: '100%', height: 350 }}>
             <ResponsiveContainer>
-             
-              {/* <LineChart data={dashboardData?.trend_chart ?? []}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="period_start" />
-              <YAxis unit="m" />
-              <Tooltip />
-              <Legend />
-
-              {/* P90: The Bottleneck (Thickest) 
-              <Line 
-                name="P90 (Slowest 10%)" 
-                type="monotone" 
-                dataKey={p90Key} 
-                stroke="#ef4444" // Red: High Stress
-                strokeWidth={3} 
-                dot={{ r: 4 }}
-              />
-
-              {/* P75: The At-Risk Group (Medium) 
-              <Line 
-                name="P75 (Slowest 25%)" 
-                type="monotone" 
-                dataKey={p75Key} 
-                stroke="#f59e0b" // Orange: Warning
-                strokeWidth={2} 
-                strokeDasharray="5 5"
-              />
-
-              {/* P50: The Median (Thinnest) 
-              <Line 
-                name="P50 (Median)" 
-                type="monotone" 
-                dataKey={p50Key} 
-                stroke="#94a3b8" // Gray: Baseline
-                strokeWidth={1}
-              />
-            </LineChart> */}
-          <LineChart data={dashboardData?.trend_chart ?? []}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-            <XAxis dataKey="period_start" stroke="#64748b" fontSize={12} />
-            <YAxis unit="m" stroke="#64748b" fontSize={12} />
-            <Tooltip />
-            <Legend />
-            
-            {/* <ReferenceLine y={60} label="Target" stroke="#ef4444" strokeDasharray="5 5" /> */}
-            {/* we do not have a reference. We can add it if we find it*/}
-            {/* ONLY ONE LINE RENDERS */}
-            <Line 
-              name={displayLabel} 
-              type="monotone" 
-              dataKey={activeDataKey} 
-              stroke="#4338CA" // Keep a consistent strong color for the active metric
-              strokeWidth={3} 
-              dot={{ r: 4 }}
-              activeDot={{ r: 6 }}
-              animationDuration={500} // Smooth transition when the line "jumps" to new data
-            />
-            <Line 
-              name={baselineLabel} 
-              type="monotone" 
-              dataKey={p50Key} 
-              stroke="#94a3b8" // Slate Gray
-              strokeWidth={2} 
-              strokeDasharray="5 5" // Dashed to show it's a reference
-              dot={false} // Remove dots to keep it clean
-            />
-          </LineChart>
-
+              <LineChart data={dashboardData?.trend_chart ?? []}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="period_start" stroke="#64748b" fontSize={12} />
+                <YAxis unit="m" stroke="#64748b" fontSize={12} />
+                <Tooltip />
+                
+                {/* Dynamically render Line components based on active filters */}
+                {clinicalStageConfig.map((stage) => {
+                  if (!activeTrendFilters[stage.key]) return null;
+                  
+                  const dataKey = `${stage.key}_${percentileLevel}`;
+                  return (
+                    <Line
+                      key={stage.key}
+                      name={stage.label}
+                      type="monotone"
+                      dataKey={dataKey}
+                      stroke={stage.color}
+                      strokeWidth={2.5}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 5 }}
+                      animationDuration={500}
+                    />
+                  );
+                })}
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </section>
