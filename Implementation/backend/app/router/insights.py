@@ -125,3 +125,21 @@ async def get_temporal_heatmap(upload_id: Optional[int] = Query(None), lookback:
         }
 
     return service.get_temporal_heatmap(effective_id, lookback)
+
+
+@router.get('/stage_temporal_forecast')
+async def get_stage_temporal_forecast(
+    upload_id: Optional[int] = Query(None),
+    lookback: int = Query(3, description="Number of recent uploads to aggregate")
+):
+    effective_id = upload_id or service.get_latest_upload_id()
+    return service.get_stage_temporal_forecast(effective_id, lookback)
+
+
+@router.get('/event_flow_forecast')
+async def get_event_flow_forecast(
+    upload_id: Optional[int] = Query(None),
+    lookback: int = Query(3, description="Number of recent uploads to aggregate")
+):
+    effective_id = upload_id or service.get_latest_upload_id()
+    return service.get_event_flow_forecast_insights(effective_id, lookback)

@@ -23,8 +23,68 @@
 
 .forecast_grid, .audit_grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1.7fr 1.3fr;
   gap: 1.5rem;
+  align-items: start;
+}
+
+.risk_cards_container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  align-content: start;
+}
+
+.risk_card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.6rem 0.65rem;
+  background: #f8fafc;
+}
+
+.risk_card:nth-child(5),
+.risk_card:nth-child(6) {
+  grid-column: 1 / -1;
+}
+
+.risk_card h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.risk_metric {
+  margin: 0.2rem 0;
+  color: #475569;
+  font-size: 0.85rem;
+}
+
+.risk_value {
+  margin: 0.2rem 0;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.forecast_alert_list {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+  color: #334155;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 1100px) {
+  .forecast_grid {
+    grid-template-columns: 1fr;
+  }
+
+  .risk_cards_container {
+    grid-template-columns: 1fr;
+  }
+
+  .risk_card:nth-child(5),
+  .risk_card:nth-child(6) {
+    grid-column: auto;
+  }
 }
 
 h3 {

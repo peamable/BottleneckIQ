@@ -8,6 +8,79 @@
       { "metric": "EMS Surge", "probability": 22, "level": "Low" }
     ]
   },
+  "stage_temporal_forecast": {
+    "current_context": {
+      "day_label": "Monday",
+      "hour_of_day": 14,
+      "next_day_label": "Monday",
+      "next_hour_of_day": 15
+    },
+    "current_slot": { "vital": 24, "medrecon": 18, "dispen": 20, "discharge": 26 },
+    "next_slot": { "vital": 35, "medrecon": 30, "dispen": 29, "discharge": 38 },
+    "current_day_summary": { "vital": 26, "medrecon": 21, "dispen": 23, "discharge": 28 },
+    "next_day_summary": { "vital": 29, "medrecon": 24, "dispen": 25, "discharge": 31 },
+    "alerts": [
+      {
+        "stage": "vital",
+        "stage_label": "Vitals",
+        "recommendation": "Prepare vitals capacity before 15:00."
+      },
+      {
+        "stage": "discharge",
+        "stage_label": "Discharge",
+        "recommendation": "Prepare discharge capacity before 15:00."
+      }
+    ],
+    "today_hourly_risk": [
+      { "time_label": "00:00", "vital": 8, "medrecon": 6, "dispen": 7, "discharge": 10 },
+      { "time_label": "01:00", "vital": 7, "medrecon": 5, "dispen": 6, "discharge": 9 },
+      { "time_label": "02:00", "vital": 7, "medrecon": 5, "dispen": 6, "discharge": 8 },
+      { "time_label": "03:00", "vital": 8, "medrecon": 6, "dispen": 7, "discharge": 9 },
+      { "time_label": "04:00", "vital": 10, "medrecon": 7, "dispen": 8, "discharge": 11 },
+      { "time_label": "05:00", "vital": 12, "medrecon": 8, "dispen": 10, "discharge": 12 },
+      { "time_label": "06:00", "vital": 14, "medrecon": 10, "dispen": 12, "discharge": 14 },
+      { "time_label": "07:00", "vital": 16, "medrecon": 12, "dispen": 13, "discharge": 16 },
+      { "time_label": "08:00", "vital": 19, "medrecon": 14, "dispen": 16, "discharge": 18 },
+      { "time_label": "09:00", "vital": 22, "medrecon": 16, "dispen": 18, "discharge": 20 },
+      { "time_label": "10:00", "vital": 24, "medrecon": 17, "dispen": 20, "discharge": 22 },
+      { "time_label": "11:00", "vital": 26, "medrecon": 18, "dispen": 22, "discharge": 24 },
+      { "time_label": "12:00", "vital": 28, "medrecon": 20, "dispen": 24, "discharge": 27 },
+      { "time_label": "13:00", "vital": 30, "medrecon": 22, "dispen": 25, "discharge": 29 },
+      { "time_label": "14:00", "vital": 24, "medrecon": 18, "dispen": 20, "discharge": 26 },
+      { "time_label": "15:00", "vital": 35, "medrecon": 30, "dispen": 29, "discharge": 38 },
+      { "time_label": "16:00", "vital": 33, "medrecon": 28, "dispen": 27, "discharge": 35 },
+      { "time_label": "17:00", "vital": 31, "medrecon": 26, "dispen": 25, "discharge": 33 },
+      { "time_label": "18:00", "vital": 32, "medrecon": 27, "dispen": 28, "discharge": 34 },
+      { "time_label": "19:00", "vital": 34, "medrecon": 29, "dispen": 30, "discharge": 36 },
+      { "time_label": "20:00", "vital": 28, "medrecon": 24, "dispen": 24, "discharge": 30 },
+      { "time_label": "21:00", "vital": 22, "medrecon": 19, "dispen": 18, "discharge": 24 },
+      { "time_label": "22:00", "vital": 17, "medrecon": 15, "dispen": 14, "discharge": 20 },
+      { "time_label": "23:00", "vital": 12, "medrecon": 10, "dispen": 9, "discharge": 14 }
+    ]
+  },
+  "event_flow_forecast": {
+    "summary": "Pathways ranked by highest average ED LOS",
+    "top_delay_flows": [
+      {
+        "event_flow": "1 -> 2 -> 3 -> 4 -> 5 -> 6",
+        "event_flow_label": "entry -> triage -> vital -> medrecon -> dispen -> discharge",
+        "avg_los_min": 312.5,
+        "share_pct": 34.2
+      },
+      {
+        "event_flow": "1 -> 2 -> 3 -> 5 -> 6",
+        "event_flow_label": "entry -> triage -> vital -> dispen -> discharge",
+        "avg_los_min": 287.9,
+        "share_pct": 18.7
+      },
+      {
+        "event_flow": "1 -> 2 -> 4 -> 5 -> 6",
+        "event_flow_label": "entry -> triage -> medrecon -> dispen -> discharge",
+        "avg_los_min": 265.1,
+        "share_pct": 14.9
+      }
+    ]
+  },
   "heatmap_data": {
     "y_days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
     "x_hours": ["12am", "3am", "6am", "9am", "12pm", "3pm", "6pm", "9pm"],
