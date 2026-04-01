@@ -235,7 +235,7 @@ useEffect(() => {
 
         {/* SECTION 3: ARRIVAL & DISPOSITION */}
         <section className="insight_block logistics_root_cause">
-          <h3>Logistics Root Cause Analysis</h3>
+          <h3>Patient Flow Analysis</h3>
           {/* Plotly Bar/Sankey Chart */}
           <div className="logistics_grid_container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
           
@@ -274,7 +274,7 @@ useEffect(() => {
 
     {/* Part B: Chief Complaint Bottleneck Bar Chart */}
     <div className="chart_wrapper">
-      <h4>Chief Complaint Bottleneck Categories</h4>
+      <h4>Bed Occupancy Analysis by Case Mix</h4>
       <Plot
         data={[{
           x: insightsData?.chief_complaint_bottlenecks?.map(c => c.value) || [],
