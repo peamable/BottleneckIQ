@@ -60,11 +60,11 @@
 }
 
 .metric_card_mini.card_bottleneck .stat_label_mini {
-  color: #fbbf24;
+  color: #ffe4c4;
 }
 
 .metric_card_mini.card_needs_improvement .stat_label_mini {
-  color: brown;
+  color: #ffe4c4;
 }
 
 .metric_card_mini.card_bottleneck .stat_value_large {
