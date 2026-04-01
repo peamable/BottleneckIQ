@@ -102,6 +102,19 @@
 .trend_up { color: #ef4444; }    /* Red for increased time (bottleneck) */
 .trend_down { color: #10b981; }  /* Green for decreased time (efficiency) */
 
+.metric_card_mini.card_bottleneck .trend_indicator.trend_up {
+  color: #fbf024;
+}
+
+.metric_card_mini.card_needs_improvement .trend_indicator.trend_up {
+  color: #fbf024;
+}
+
+.metric_card_mini.card_bottleneck .trend_indicator.trend_down,
+.metric_card_mini.card_needs_improvement .trend_indicator.trend_down {
+  color: #14532d;
+}
+
 /* --- CHART & VISUAL CONTAINERS --- */
 .trend_chart_section, .visual_container {
   background: #F1F5F9;
