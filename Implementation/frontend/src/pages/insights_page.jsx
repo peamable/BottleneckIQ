@@ -341,7 +341,7 @@ useEffect(() => {
           </div>
 
           <div className="volume_stress_test">
-            <h3>Efficiency vs. Volume Correlation</h3>
+            <h3>P90 Total ED Stay Time vs. Patient Volume Correlation</h3>
             <Plot
               data={[
                 {

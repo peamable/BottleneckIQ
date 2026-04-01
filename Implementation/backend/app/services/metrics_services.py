@@ -126,34 +126,6 @@ def get_dashboard_summary(upload_id: int):
 
     return summary
 
-# Overall Avg Stay time per activity, and overall total stay time
-# def get_metrics_data(upload_id: int, batch_id: Optional[str] = None) -> List[Dict[str, Any]]:
-#     """Fetches and normalizes metrics for a specific ID."""
-#     query_str = "SELECT * FROM metrics WHERE upload_id = :upload_id"
-#     params = {"upload_id": upload_id}
-    
-#     if batch_id:
-#         query_str += " AND batch_id = :batch_id"
-#         params["batch_id"] = batch_id
-        
-#     query = text(query_str + " ORDER BY metric_name")
-    
-#     with engine.connect() as conn:
-#         rows = conn.execute(query, params).mappings().all()
-
-#     normalized_rows = []
-#     for row in rows:
-#         row_dict = dict(row)
-#         # Handle the JSON string conversion safely
-#         acuity_val = row_dict.get("stay_time_per_acuity")
-#         if isinstance(acuity_val, str):
-#             try:
-#                 row_dict["stay_time_per_acuity"] = json.loads(acuity_val)
-#             except json.JSONDecodeError:
-#                 row_dict["stay_time_per_acuity"] = {}
-#         normalized_rows.append(row_dict)
-#     return normalized_rows
-
 
 # Acuity Benchmarking Reference Data
 ACUITY_REFERENCE = {

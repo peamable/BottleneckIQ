@@ -11,7 +11,11 @@ from sqlalchemy import text
 from app.config import settings
 from app.core.database import engine
 from app.services.aggregation import insert_duration_event
-from app.services.analytics import calculate_and_store_metrics, generate_hourly_aggregates
+from app.services.analytics import (
+    calculate_and_store_bottleneck_status_counts,
+    calculate_and_store_metrics,
+    generate_hourly_aggregates,
+)
 from app.services.data_cleaning import SchemaValidationError, clean_to_ed_stay_and_stay_info
 from app.services.data_ingestion import load_to_staging, process_staged_batch
 from app.services.data_validation import validate_batch
@@ -119,6 +123,7 @@ def _continue_after_staging(upload_id: int, batch_id: str, skip_invalid_rows: bo
     try:
         metrics_result = calculate_and_store_metrics(upload_id=upload_id, batch_id=batch_id)
         hourly_result = generate_hourly_aggregates(upload_id=upload_id)
+        bottleneck_result = calculate_and_store_bottleneck_status_counts(upload_id=upload_id, batch_id=batch_id)
     except Exception as e:
         logger.warning(f"Metrics failed: {e}")
         update_stage(upload_id, "analytics", "failed", f"Analytics failed: {e}")
@@ -141,6 +146,7 @@ def _continue_after_staging(upload_id: int, batch_id: str, skip_invalid_rows: bo
         message="Upload completed successfully.",
         metrics_status=metrics_result,
         hourly_aggregates_status=hourly_result,
+        bottleneck_status_counts_status=bottleneck_result,
         event_log_rows_affected=int(affected),
         summary_report=_build_pipeline_summary(upload_id, result=result, event_log_rows_affected=int(affected)),
     )

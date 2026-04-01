@@ -415,7 +415,7 @@ const UploadPage = () => {
                     <div className="button-group pipeline-action-buttons">
                       <button
                         className="btn-primary"
-                        onClick={() => navigate('/view_metrics', { state: { upload_id: lastUploadId } })}
+                        onClick={() => navigate(`/view_metrics?upload_id=${lastUploadId}`, { state: { upload_id: lastUploadId } })}
                       >
                         View Metrics Dashboard
                       </button>
