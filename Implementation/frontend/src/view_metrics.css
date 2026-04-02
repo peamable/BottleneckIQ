@@ -271,3 +271,82 @@
   /* align-items: center; */
   /* gap: 5px; */
 /* } */
+
+/* --- PERFORMANCE TREND FILTER TAGS --- */
+.top_right_controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter_tags_row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+}
+
+.dashboard_controls_bar .filter_tags_row {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: none;
+}
+
+.filter_tags_label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  margin-right: 0.5rem;
+}
+
+.filter_tags_container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.filter_tag {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  border: 2px solid;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: transparent;
+  color: #475569;
+  white-space: nowrap;
+  font-family: inherit;
+  outline: none;
+}
+
+.filter_tag.active {
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: scale(1.05);
+}
+
+.filter_tag.inactive {
+  opacity: 0.7;
+  background-color: #f1f5f9;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.filter_tag:hover:not(.inactive) {
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.filter_tag:active {
+  transform: scale(0.98);
+}

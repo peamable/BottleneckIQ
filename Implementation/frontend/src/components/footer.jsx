@@ -19,7 +19,7 @@ const Footer = () => {
                 <ShieldCheck size={16} color="#10b981" />
                 <span>Data Pipeline: Active</span>
             </div>
-            <a href="#docs" className="footer_link">Documentation</a>
+            <a href="https://github.com/peamable/W26_4495_S2_PhoebeA.git" className="footer_link" target="_blank" rel="noopener noreferrer">Documentation</a>
             <a href="#support" className="footer_link">Support</a>
             </div>
         </div>

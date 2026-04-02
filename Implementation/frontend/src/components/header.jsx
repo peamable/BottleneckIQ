@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import React from "react";
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Activity, Bell, User } from 'lucide-react';
+import { Activity, User } from 'lucide-react';
 import '../header.css';
 import { useAuth } from '../context/auth_context.jsx';
 
@@ -42,6 +42,29 @@ const Header = ({ uploadIdFromUrl }) => {
             navigate('/');
         } catch (error) {
             console.error('Logout failed', error);
+        }
+    };
+
+    const handleGenerateReport = async () => {
+        try {
+            const response = await fetch('http://localhost:8000/reports/generate-pdf', {
+                method: 'GET',
+            });
+            if (!response.ok) {
+                throw new Error('Failed to generate report');
+            }
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bottleneckiq-report.pdf';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Report generation failed', error);
+            alert('Failed to generate report. Please try again.');
         }
     };
 
@@ -96,8 +119,11 @@ const Header = ({ uploadIdFromUrl }) => {
 
             {/* RIGHT SIDE: Navigation Actions */}
             <div className="header-actions">
-                <button className="icon-button">
-                <Bell size={20} />
+                <button className="main-button" onClick={() => navigate('/landing')}>
+                    Main
+                </button>
+                <button className="report-button" onClick={handleGenerateReport}>
+                    Generate Report
                 </button>
                 {user ? (
                     <button className="header-logout-button" onClick={handleLogout}>

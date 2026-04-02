@@ -60,9 +60,11 @@ function buildTrendLine(points) {
 }
 
 const InsightsPage = () => {
-  const [insightsData, setInsightsData] = useState(mockData); // Initially set to mock data for development
+  const [insightsData, setInsightsData] = useState(null);
+  const [heatmapData, setHeatmapData] = useState(null);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [isUsingMockData, setIsUsingMockData] = useState(false);
 
 useEffect(() => {
   const controller = new AbortController();
@@ -70,8 +72,20 @@ useEffect(() => {
   const fetchInsights = async () => {
     try {
       setLoading(true);
+      setError(null);
+      setIsUsingMockData(false);
 
-      const [logisticsRes, demographicsRes, bottlenecksRes, volumeEfficiencyRes, dispositionsRes, acuityRes] = await Promise.all([
+      const [
+        logisticsRes,
+        demographicsRes,
+        bottlenecksRes,
+        volumeEfficiencyRes,
+        dispositionsRes,
+        acuityRes,
+        temporalHeatmapRes,
+        stageTemporalRes,
+        eventFlowRes
+      ] = await Promise.all([
         fetch('http://localhost:8000/insights/logistics_root_cause', {
           signal: controller.signal
         }),
@@ -89,6 +103,15 @@ useEffect(() => {
         }),
         fetch('http://localhost:8000/insights/acuity_level_analysis', {
           signal: controller.signal
+        }),
+        fetch('http://localhost:8000/insights/temporal_heatmap', {
+          signal: controller.signal
+        }),
+        fetch('http://localhost:8000/insights/stage_temporal_forecast', {
+          signal: controller.signal
+        }),
+        fetch('http://localhost:8000/insights/event_flow_forecast', {
+          signal: controller.signal
         })
       ]);
       if (!logisticsRes.ok) throw new Error(`Logistics Error: ${logisticsRes.status}`);
@@ -97,7 +120,8 @@ useEffect(() => {
       if (!volumeEfficiencyRes.ok) throw new Error(`Volume-Efficiency Correlation Error: ${volumeEfficiencyRes.status}`);
       if (!dispositionsRes.ok) throw new Error(`Disposition Comparison Error: ${dispositionsRes.status}`);
       if (!acuityRes.ok) throw new Error(`Acuity Level Analysis Error: ${acuityRes.status}`);
-
+      if (!stageTemporalRes.ok) throw new Error(`Stage Temporal Forecast Error: ${stageTemporalRes.status}`);
+      if (!eventFlowRes.ok) throw new Error(`Event Flow Forecast Error: ${eventFlowRes.status}`);
 
       const logisticsPayload = await logisticsRes.json();
       const demographicsPayload = await demographicsRes.json();
@@ -105,11 +129,15 @@ useEffect(() => {
       const volumeEfficiencyPayload = await volumeEfficiencyRes.json();
       const dispositionsPayload = await dispositionsRes.json();
       const acuityPayload = await acuityRes.json();
+      const temporalHeatmapPayload = await temporalHeatmapRes.json();
+      const stageTemporalPayload = await stageTemporalRes.json();
+      const eventFlowPayload = await eventFlowRes.json();
+      setHeatmapData(temporalHeatmapPayload || null);
 
       setInsightsData(prev => ({
-        ...prev,
+        ...(prev || {}),
         logistics_root_cause: {
-          ...prev.logistics_root_cause,
+          ...((prev && prev.logistics_root_cause) || {}),
           disposition_mix: logisticsPayload.logistics_root_cause.disposition_mix || [],
           top_chief_complaints: logisticsPayload.logistics_root_cause.top_chief_complaints || []
         },
@@ -117,12 +145,16 @@ useEffect(() => {
         chief_complaint_bottlenecks: bottlenecksPayload.chief_complaint_bottlenecks || [],
         efficiency_stress_test: volumeEfficiencyPayload.correlation_chart || [],
         disposition_chart: dispositionsPayload.disposition_milestone_analysis || [],
-        acuity_chart: acuityPayload.acuity_level_analysis || []
+        acuity_chart: acuityPayload.acuity_level_analysis || [],
+        stage_temporal_forecast: stageTemporalPayload || null,
+        event_flow_forecast: eventFlowPayload || null
       }));
     } catch (err) {
       if (err.name !== 'AbortError') {
         console.warn('Falling back to mock data', err);
         setError(err.message);
+        setInsightsData(mockData);
+        setIsUsingMockData(true);
       }
     } finally {
       setLoading(false);
@@ -151,86 +183,220 @@ useEffect(() => {
     ? dispositionMix.reduce((total, item) => total + Number(item.count), 0)
     : null;
 
+  // Helper function to transform temporal_summary heatmap data into display format
+  const generateHeatmapData = () => {
+    const defaultDayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const defaultSliceLabels = ['Dawn ', 'Morning', 'Afternoon', 'Night '];
+    const defaultMatrix = Array(7).fill(null).map(() => Array(4).fill(0));
+
+    const dayNames = heatmapData?.day_labels || mockData?.heatmap_data?.y_days || defaultDayNames;
+    const sliceLabels = heatmapData?.slice_labels || mockData?.heatmap_data?.x_hours || defaultSliceLabels;
+    const volumeMatrix = heatmapData?.volume_matrix || mockData?.heatmap_data?.z_matrix || defaultMatrix;
+
+    return { matrix: volumeMatrix, dayNames, sliceLabels };
+  };
+
+  const { matrix: heatmapMatrix, dayNames, sliceLabels } = generateHeatmapData();
+
+  const stageForecast = insightsData?.stage_temporal_forecast || null;
+  const eventFlowForecast = insightsData?.event_flow_forecast || null;
+  const stageHourlyRisk = stageForecast?.today_hourly_risk || [];
+  const contextNow = stageForecast?.current_context || null;
+  const currentSlot = stageForecast?.current_slot || null;
+  const nextSlot = stageForecast?.next_slot || null;
+  const currentDaySummary = stageForecast?.current_day_summary || null;
+  const nextDaySummary = stageForecast?.next_day_summary || null;
+  const stageAlerts = stageForecast?.alerts || [];
+  const topFlowRisks = eventFlowForecast?.top_delay_flows || [];
+
+  const stageRiskOrZero = (slot, key) => Number(slot?.[key] ?? 0);
+  const maxStageRisk = (slot) => Math.max(
+    stageRiskOrZero(slot, 'vital'),
+    stageRiskOrZero(slot, 'medrecon'),
+    stageRiskOrZero(slot, 'dispen'),
+    stageRiskOrZero(slot, 'discharge')
+  );
+
+  if (loading && !insightsData) {
+    return (
+      <div className="insights_container">
+        <section className="insight_block">
+          <h3>Insights</h3>
+          <p className="insights_status_message">Loading live insights data...</p>
+        </section>
+      </div>
+    );
+  }
+
+
     return (
     <div className="insights_container">
+      {isUsingMockData ? (
+        <section className="insight_block insights_status_warning">
+          <p className="insights_status_message">
+            Live API data is currently unavailable. Showing mock data for demonstration.
+            {error ? ` (${error})` : ''}
+          </p>
+        </section>
+      ) : null}
       {/* SECTION 1: THE FORECAST HUB */}
       <section className="insight_block forecast_hub">
         <h3>Proactive Analytics & Forecasting</h3>
         <div className="forecast_grid">
           <div className="forecast_chart">
-            {/* Plotly Volume Forecast Line Chart */}
+            {/* Stage-specific bottleneck risk by hour (today) */}
             <Plot
-    data={[
-      {
-        x: mockData?.forecast_hub?.labels || [],
-        y: mockData?.forecast_hub?.actual_volume || [],
-        type: 'scatter',
-        mode: 'lines+markers',
-        name: 'Actual Volume',
-        line: { color: '#6366f1', width: 3 },
-        marker: { size: 6 }
-      },
-      {
-        x: mockData?.forecast_hub?.labels || [],
-        y: mockData?.forecast_hub?.predicted_volume || [],
-        type: 'scatter',
-        mode: 'lines',
-        name: 'Forecasted Volume',
-        line: { color: '#6366f1', width: 3, dash: 'dot' },
-        connectgaps: true // Ensures the line joins the last 'Actual' point
-      }
-    ]}
-    layout={{
-      height: 350,
-      margin: { t: 30, b: 60, l: 60, r: 20 },
-      xaxis: { 
-        title: { text: 'Time of Day', standoff: 15 },
-        automargin: true 
-      },
-      yaxis: { 
-        title: { text: 'Patient Count', standoff: 15 },
-        automargin: true 
-      },
-      legend: { orientation: 'h', y: -0.2 },
-      paper_bgcolor: 'transparent',
-      plot_bgcolor: 'transparent'
-    }}
-    useResizeHandler={true}
-    style={{ width: '100%' }}
-  />
+              data={[
+                {
+                  x: stageHourlyRisk.map((r) => r.time_label),
+                  y: stageHourlyRisk.map((r) => Number(r.vital || 0)),
+                  type: 'scatter',
+                  mode: 'lines',
+                  name: 'Vitals',
+                  line: { color: '#2563eb', width: 2 }
+                },
+                {
+                  x: stageHourlyRisk.map((r) => r.time_label),
+                  y: stageHourlyRisk.map((r) => Number(r.medrecon || 0)),
+                  type: 'scatter',
+                  mode: 'lines',
+                  name: 'Med Recon',
+                  line: { color: '#f59e0b', width: 2 }
+                },
+                {
+                  x: stageHourlyRisk.map((r) => r.time_label),
+                  y: stageHourlyRisk.map((r) => Number(r.dispen || 0)),
+                  type: 'scatter',
+                  mode: 'lines',
+                  name: 'Dispensing',
+                  line: { color: '#9333ea', width: 2 }
+                },
+                {
+                  x: stageHourlyRisk.map((r) => r.time_label),
+                  y: stageHourlyRisk.map((r) => Number(r.discharge || 0)),
+                  type: 'scatter',
+                  mode: 'lines',
+                  name: 'Discharge',
+                  line: { color: '#dc2626', width: 2 }
+                }
+              ]}
+              layout={{
+                height: 350,
+                margin: { t: 30, b: 60, l: 60, r: 20 },
+                xaxis: {
+                  title: { text: 'Hour (Today)', standoff: 15 },
+                  automargin: true,
+                  tickangle: -45
+                },
+                yaxis: {
+                  title: { text: 'Bottleneck Risk (%)', standoff: 15 },
+                  automargin: true,
+                  range: [0, 100]
+                },
+                legend: { orientation: 'h', y: -0.25 },
+                paper_bgcolor: 'transparent',
+                plot_bgcolor: 'transparent',
+                shapes: contextNow ? [
+                  {
+                    type: 'line',
+                    x0: `${String(contextNow.hour_of_day).padStart(2, '0')}:00`,
+                    x1: `${String(contextNow.hour_of_day).padStart(2, '0')}:00`,
+                    y0: 0,
+                    y1: 100,
+                    line: { color: '#0f172a', dash: 'dot', width: 1 }
+                  }
+                ] : []
+              }}
+              useResizeHandler={true}
+              style={{ width: '100%' }}
+            />
           </div>
           <div className="risk_cards_container">
-            {/* Risk Probability Cards */}
+            <div className="risk_card">
+              <h4>Now</h4>
+              <p className="risk_metric">{contextNow ? `${contextNow.day_label} ${String(contextNow.hour_of_day).padStart(2, '0')}:00` : 'N/A'}</p>
+              <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(currentSlot))}%</p>
+            </div>
+            <div className="risk_card">
+              <h4>Next Hour</h4>
+              <p className="risk_metric">{contextNow ? `${contextNow.next_hour_day_label || contextNow.day_label} ${String(contextNow.next_hour_of_day).padStart(2, '0')}:00` : 'N/A'}</p>
+              <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(nextSlot))}%</p>
+            </div>
+            <div className="risk_card">
+              <h4>Today (Day-Level)</h4>
+              <p className="risk_metric">{contextNow ? contextNow.day_label : 'N/A'}</p>
+              <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(currentDaySummary))}%</p>
+            </div>
+            <div className="risk_card">
+              <h4>Next Day (Day-Level)</h4>
+              <p className="risk_metric">{contextNow ? contextNow.next_day_label : 'N/A'}</p>
+              <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(nextDaySummary))}%</p>
+            </div>
+            <div className="risk_card">
+              <h4>Prep Recommendations</h4>
+              {stageAlerts.length ? (
+                <ul className="forecast_alert_list">
+                  {stageAlerts.slice(0, 3).map((alert) => (
+                    <li key={alert.stage}>
+                      <strong>{alert.stage_label}:</strong> {alert.recommendation}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="risk_metric">No elevated next-hour stage risk detected.</p>
+              )}
+            </div>
+            <div className="risk_card">
+              <h4>High-Risk Patient Pathways</h4>
+              {topFlowRisks.length ? (
+                <ul className="forecast_alert_list">
+                  {topFlowRisks.slice(0, 3).map((flow) => (
+                    <li key={flow.event_flow}>
+                      <strong>{flow.event_flow_label}</strong>: {Math.round(flow.avg_los_min)} min avg LOS ({flow.share_label || `${flow.share_pct}%`} of stays, n={flow.stay_count})
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="risk_metric">No event flow pathway trends available yet.</p>
+              )}
+            </div>
           </div>
         </div>
       </section>
 
       <div className="insights_middle_row">
-        {/* SECTION 2: LOGISTICS HEATMAP */}
+        {/* SECTION 2: TEMPORAL HEATMAP */}
         <section className="insight_block heatmap_section">
-          <h3>Temporal Bottleneck Patterns (P90 Gap)</h3>
-          {/* Plotly Heatmap */}
+          <div className="heatmap_header">
+            <h3>Temporal Patterns by Day </h3>
+            {/* <small style={{ color: '#64748b' }}>Aggregated to 4 slices: Dawn, Morning, Afternoon, Night.</small> */}
+          </div>
+
           <Plot
-  data={[
-    {
-      z: [[10, 20, 30], [20, 50, 60], [30, 60, 90]], // P90 Values
-      x: ['Morning', 'Afternoon', 'Evening'],
-      y: ['Monday', 'Tuesday', 'Wednesday'],
-      type: 'heatmap',
-      colorscale: 'Viridis',
-      showscale: true,
-    }
-  ]}
-  layout={{ 
-    title: 'Peak Bottleneck Hours',
-    autosize: true,
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(0,0,0,0)',
-    margin: { t: 40, b: 40, l: 60, r: 10 }
-  }}
-  useResizeHandler={true}
-  style={{ width: '100%', height: '300px' }}
-/>
+            data={[
+              {
+                  z: heatmapMatrix,
+                  x: sliceLabels,
+                  y: dayNames,
+                  type: 'heatmap',
+                  colorscale: 'Viridis',
+                  showscale: true,
+                  colorbar: { title: 'Patient Volume' },
+                  hovertemplate: '<b>%{y}</b><br>%{x}<br>Volume: %{z}<extra></extra>'
+              }
+            ]}
+              layout={{
+                title: 'Patient Volume by 6-hour Slice & Day of Week',
+                autosize: true,
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                margin: { t: 60, b: 60, l: 120, r: 10 },
+                xaxis: { title: '6-hour Time Slice' },
+                yaxis: { title: 'Day of Week' }
+              }}
+              useResizeHandler={true}
+              style={{ width: '100%', height: '500px' }}
+            />
         </section>
 
         {/* SECTION 3: ARRIVAL & DISPOSITION */}

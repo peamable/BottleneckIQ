@@ -59,6 +59,44 @@
   transform: translateY(-1px);
 }
 
+.main-button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #3b82f6;
+  border-radius: 999px;
+  background: #3b82f6;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(59, 130, 246, 0.28);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.main-button:hover {
+  background: #2563eb;
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.34);
+  transform: translateY(-1px);
+}
+
+.report-button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #10b981;
+  border-radius: 999px;
+  background: #10b981;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 8px 18px rgba(16, 185, 129, 0.28);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.report-button:hover {
+  background: #059669;
+  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.34);
+  transform: translateY(-1px);
+}
+
 .icon-button {
   background: none;
   border: none;

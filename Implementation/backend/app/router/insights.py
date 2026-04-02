@@ -111,3 +111,35 @@ async def get_acuity_level_analysis(upload_id: Optional[int] = Query(None)):
         }
 
     return service.get_acuity_level_breakdown(effective_id)
+
+
+@router.get('/temporal_heatmap')
+async def get_temporal_heatmap(upload_id: Optional[int] = Query(None), lookback: int = Query(3, description="Number of recent uploads to aggregate")):
+    effective_id = upload_id or service.get_latest_upload_id()
+    if effective_id is None:
+        return {
+            "upload_id": None,
+            "day_labels": ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+            "slice_labels": ['Dawn (00:00-06:00)', 'Morning (06:00-12:00)', 'Afternoon (12:00-18:00)', 'Night (18:00-24:00)'],
+            "volume_matrix": [[0,0,0,0] for _ in range(7)]
+        }
+
+    return service.get_temporal_heatmap(effective_id, lookback)
+
+
+@router.get('/stage_temporal_forecast')
+async def get_stage_temporal_forecast(
+    upload_id: Optional[int] = Query(None),
+    lookback: int = Query(3, description="Number of recent uploads to aggregate")
+):
+    effective_id = upload_id or service.get_latest_upload_id()
+    return service.get_stage_temporal_forecast(effective_id, lookback)
+
+
+@router.get('/event_flow_forecast')
+async def get_event_flow_forecast(
+    upload_id: Optional[int] = Query(None),
+    lookback: int = Query(3, description="Number of recent uploads to aggregate")
+):
+    effective_id = upload_id or service.get_latest_upload_id()
+    return service.get_event_flow_forecast_insights(effective_id, lookback)

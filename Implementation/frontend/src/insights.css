@@ -15,6 +15,17 @@
   overflow: visible;
 }
 
+.insights_status_warning {
+  border: 1px solid #f59e0b;
+  background: #fff7ed;
+}
+
+.insights_status_message {
+  margin: 0;
+  color: #334155;
+  font-size: 0.95rem;
+}
+
 .insights_middle_row {
   display: grid;
   grid-template-columns: 1fr 1fr; /* Two columns for Heatmap and Logistics */
@@ -23,8 +34,68 @@
 
 .forecast_grid, .audit_grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1.7fr 1.3fr;
   gap: 1.5rem;
+  align-items: start;
+}
+
+.risk_cards_container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  align-content: start;
+}
+
+.risk_card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.6rem 0.65rem;
+  background: #f8fafc;
+}
+
+.risk_card:nth-child(5),
+.risk_card:nth-child(6) {
+  grid-column: 1 / -1;
+}
+
+.risk_card h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.risk_metric {
+  margin: 0.2rem 0;
+  color: #475569;
+  font-size: 0.85rem;
+}
+
+.risk_value {
+  margin: 0.2rem 0;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.forecast_alert_list {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+  color: #334155;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 1100px) {
+  .forecast_grid {
+    grid-template-columns: 1fr;
+  }
+
+  .risk_cards_container {
+    grid-template-columns: 1fr;
+  }
+
+  .risk_card:nth-child(5),
+  .risk_card:nth-child(6) {
+    grid-column: auto;
+  }
 }
 
 h3 {
@@ -50,4 +121,45 @@ h3 {
   gap: 20px;
   width: 100%;
   padding-bottom: 20px; /* Gives extra space at the bottom of the row */
+}
+
+/* Heatmap Controls */
+.heatmap_header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1rem;
+}
+
+.heatmap_toggles {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.heatmap_toggle_btn {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 2px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  outline: none;
+}
+
+.heatmap_toggle_btn:hover {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+}
+
+.heatmap_toggle_btn.active {
+  background: #4338CA;
+  color: #ffffff;
+  border-color: #4338CA;
+  box-shadow: 0 2px 8px rgba(67, 56, 202, 0.2);
 }
