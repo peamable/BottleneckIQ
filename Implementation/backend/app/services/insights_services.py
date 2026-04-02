@@ -469,6 +469,7 @@ def get_event_flow_forecast_insights(upload_id: Optional[int] = None, lookback: 
         skipped_count = int(row["skipped_count"] or 0)
         skipped_pct = round((skipped_count / stay_count) * 100, 1) if stay_count else 0.0
         share_pct = round((stay_count / total_count) * 100, 1)
+        share_label = "<0.1%" if stay_count > 0 and share_pct == 0.0 else f"{share_pct}%"
 
         top_delay_flows.append(
             {
@@ -477,6 +478,7 @@ def get_event_flow_forecast_insights(upload_id: Optional[int] = None, lookback: 
                 "avg_los_min": round(avg_los_min, 1),
                 "stay_count": stay_count,
                 "share_pct": share_pct,
+                "share_label": share_label,
                 "skipped_stage_pct": skipped_pct,
                 "recommendation": (
                     "Standardize handoff checkpoints for this pathway"

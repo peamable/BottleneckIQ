@@ -60,10 +60,11 @@ function buildTrendLine(points) {
 }
 
 const InsightsPage = () => {
-  const [insightsData, setInsightsData] = useState(mockData); // Initially set to mock data for development
+  const [insightsData, setInsightsData] = useState(null);
   const [heatmapData, setHeatmapData] = useState(null);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [isUsingMockData, setIsUsingMockData] = useState(false);
 
 useEffect(() => {
   const controller = new AbortController();
@@ -71,6 +72,8 @@ useEffect(() => {
   const fetchInsights = async () => {
     try {
       setLoading(true);
+      setError(null);
+      setIsUsingMockData(false);
 
       const [
         logisticsRes,
@@ -132,9 +135,9 @@ useEffect(() => {
       setHeatmapData(temporalHeatmapPayload || null);
 
       setInsightsData(prev => ({
-        ...prev,
+        ...(prev || {}),
         logistics_root_cause: {
-          ...prev.logistics_root_cause,
+          ...((prev && prev.logistics_root_cause) || {}),
           disposition_mix: logisticsPayload.logistics_root_cause.disposition_mix || [],
           top_chief_complaints: logisticsPayload.logistics_root_cause.top_chief_complaints || []
         },
@@ -150,6 +153,8 @@ useEffect(() => {
       if (err.name !== 'AbortError') {
         console.warn('Falling back to mock data', err);
         setError(err.message);
+        setInsightsData(mockData);
+        setIsUsingMockData(true);
       }
     } finally {
       setLoading(false);
@@ -212,9 +217,28 @@ useEffect(() => {
     stageRiskOrZero(slot, 'discharge')
   );
 
+  if (loading && !insightsData) {
+    return (
+      <div className="insights_container">
+        <section className="insight_block">
+          <h3>Insights</h3>
+          <p className="insights_status_message">Loading live insights data...</p>
+        </section>
+      </div>
+    );
+  }
+
 
     return (
     <div className="insights_container">
+      {isUsingMockData ? (
+        <section className="insight_block insights_status_warning">
+          <p className="insights_status_message">
+            Live API data is currently unavailable. Showing mock data for demonstration.
+            {error ? ` (${error})` : ''}
+          </p>
+        </section>
+      ) : null}
       {/* SECTION 1: THE FORECAST HUB */}
       <section className="insight_block forecast_hub">
         <h3>Proactive Analytics & Forecasting</h3>
@@ -328,7 +352,7 @@ useEffect(() => {
                 <ul className="forecast_alert_list">
                   {topFlowRisks.slice(0, 3).map((flow) => (
                     <li key={flow.event_flow}>
-                      <strong>{flow.event_flow_label}</strong>: {Math.round(flow.avg_los_min)} min avg LOS ({flow.share_pct}% of stays)
+                      <strong>{flow.event_flow_label}</strong>: {Math.round(flow.avg_los_min)} min avg LOS ({flow.share_label || `${flow.share_pct}%`} of stays, n={flow.stay_count})
                     </li>
                   ))}
                 </ul>
