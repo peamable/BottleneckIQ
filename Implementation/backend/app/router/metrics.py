@@ -130,24 +130,7 @@ def _format_bottleneck_summary(upload_id: int) -> dict:
         "stages": formatted_stages,
     }
 
-# @router.get("/dashboard")
-# async def get_dashboard_data(
-#     upload_id: Optional[int] = Query(None)
-# ):
-#     # Use service to find ID if not provided
-#     effective_id = upload_id or service.get_latest_upload_id()
 
-#     if effective_id is None:
-#         # Return a 200 with empty data instead of a 404/422 
-#         # to keep the frontend from crashing
-#         return {"upload_id": None, "metrics": [], "message": "No data available"}
-        
-#     rows = service.get_metrics_data(effective_id)
-    
-#     return {
-#         "upload_id": effective_id,
-#         "metrics": rows
-#     }
 @router.get("/dashboard-horizon")
 async def get_horizon(upload_id: Optional[int] = Query(None)):
     return service.get_dashboard_horizon(upload_id)

@@ -403,7 +403,7 @@ useEffect(() => {
         <section className="insight_block logistics_root_cause">
           <h3>Patient Flow Analysis</h3>
           {/* Plotly Bar/Sankey Chart */}
-          <div className="logistics_grid_container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="logistics_grid_container" style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }}>
           
        {/* Part A: Disposition Pie Chart */}
     <div className="chart_wrapper">
@@ -418,7 +418,7 @@ useEffect(() => {
           textinfo: 'label+percent'
         }]}
         layout={{ 
-          height: 320, 
+          height: 240, 
           margin: { t: 10, b: 10, l: 10, r: 10 },
           showlegend: false,
           annotations: dispositionTotalCount !== null ? [{
@@ -438,7 +438,7 @@ useEffect(() => {
       />
     </div>
 
-    {/* Part B: Chief Complaint Bottleneck Bar Chart */}
+    {/* Part B: Bed Occupancy Analysis Bar Chart */}
     <div className="chart_wrapper">
       <h4>Bed Occupancy Analysis by Case Mix</h4>
       <Plot
@@ -458,7 +458,7 @@ useEffect(() => {
             'Transfer rate: %{customdata[1]}%<extra></extra>',
         }]}
         layout={{
-          height: 320,
+          height: 400,
           margin: { t: 20, b: 40, l: 140, r: 20 },
           xaxis: { title: { text: 'Total Bed-Hours', standoff: 20 } },
           yaxis: { autorange: 'reversed' },

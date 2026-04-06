@@ -47,13 +47,13 @@ def calculate_trend(current: float, previous: float) -> Dict[str, Any]:
     prev_val = float(previous) if previous is not None else 0.0
 
     if prev_val == 0:
-        return {"value": round(curr_val, 0), "trend": 0, "direction": "stable"}
+        return {"value": int(round(curr_val, 0)), "trend": 0, "direction": "stable"}
     
     diff = curr_val - prev_val
     percent_change = round((abs(diff) / prev_val) * 100, 1)
     direction = "up" if diff > 0 else "down" if diff < 0 else "stable"
     
-    return {"value": round(curr_val, 1), "trend": int(percent_change), "direction": direction}
+    return {"value": int(round(curr_val, 0)), "trend": int(percent_change), "direction": direction}
 
 def get_dashboard_summary(upload_id: int):
     metrics_sql = text("""
@@ -89,7 +89,7 @@ def get_dashboard_summary(upload_id: int):
 
         if prev_val == 0:
             return {
-                "value": round(curr_val, 1),
+                "value": int(round(curr_val, 0)),
                 "trend": 0,
                 "direction": "stable"
             }
@@ -100,7 +100,7 @@ def get_dashboard_summary(upload_id: int):
         direction = "up" if diff > 0 else "down" if diff < 0 else "stable"
 
         return {
-            "value": round(curr_val, 1),
+            "value": int(round(curr_val, 0)),
             "trend": percent_change,
             "direction": direction
         }
@@ -174,9 +174,9 @@ def build_acuity_benchmarks(upload_id: int) -> Dict[str, Any]:
 
         benchmarks.append({
             "name": ref_data["name"],
-            "ref_esi_avg": f"{ref_avg}m",
-            "dept_avg": f"{dept_avg}m",
-            "diff": f"{diff:+}m",
+            "ref_esi_avg": f"{ref_avg}min",
+            "dept_avg": f"{dept_avg}min",
+            "diff": f"{diff:+}min",
             "type": "good" if diff <= 0 else "warning",
             "color": ref_data["color"]
         })
