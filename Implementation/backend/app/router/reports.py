@@ -30,10 +30,10 @@ def cleanup_temp_file(file_path: str):
 @router.get("/generate-pdf")
 def generate_pdf_report(background_tasks: BackgroundTasks):
     """Generate a comprehensive PDF report of the ED dashboard"""
-    
-    # Create a temporary file for the PDF
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
-        pdf_path = tmp_file.name
+
+    tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+    pdf_path = tmp_file.name
+    tmp_file.close()
     
     try:
         # Initialize PDF document
@@ -49,7 +49,7 @@ def generate_pdf_report(background_tasks: BackgroundTasks):
             spaceAfter=30,
             alignment=1  # Center
         )
-        story.append(Paragraph("BottleneckIQ ED Analytics Report", title_style))
+        story.append(Paragraph("BottleneckIQ Operational Intelligence Audit", title_style))
         story.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", styles['Normal']))
         story.append(Spacer(1, 20))
         
@@ -230,24 +230,20 @@ def generate_pdf_report(background_tasks: BackgroundTasks):
         response = FileResponse(
             path=pdf_path,
             media_type='application/pdf',
-            filename='bottleneckiq-report.pdf'
+            filename='bottleneckiq-operational-intelligence-audit.pdf',
+            background=background_tasks
         )
-        
-        # Add background task to clean up the file after response is sent (if background_tasks provided)
-        if background_tasks:
-            background_tasks.add_task(cleanup_temp_file, pdf_path)
+
+        background_tasks.add_task(cleanup_temp_file, pdf_path)
         
         return response
-        
+
+    except HTTPException:
+        if os.path.exists(pdf_path):
+            os.unlink(pdf_path)
+        raise
     except Exception as e:
         # Clean up temp file on error
         if os.path.exists(pdf_path):
             os.unlink(pdf_path)
         raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
-    finally:
-        # Clean up temp file after response
-        if os.path.exists(pdf_path):
-            try:
-                os.unlink(pdf_path)
-            except:
-                pass

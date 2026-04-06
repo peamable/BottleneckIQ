@@ -57,7 +57,7 @@ const Header = ({ uploadIdFromUrl }) => {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'bottleneckiq-report.pdf';
+            a.download = 'bottleneckiq-operational-intelligence-audit.pdf';
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
@@ -123,7 +123,7 @@ const Header = ({ uploadIdFromUrl }) => {
                     Main
                 </button>
                 <button className="report-button" onClick={handleGenerateReport}>
-                    Generate Report
+                    Operational Intelligence Audit
                 </button>
                 {user ? (
                     <button className="header-logout-button" onClick={handleLogout}>

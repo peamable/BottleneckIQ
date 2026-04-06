@@ -202,12 +202,13 @@ useEffect(() => {
   const eventFlowForecast = insightsData?.event_flow_forecast || null;
   const stageHourlyRisk = stageForecast?.today_hourly_risk || [];
   const contextNow = stageForecast?.current_context || null;
-  const currentSlot = stageForecast?.current_slot || null;
-  const nextSlot = stageForecast?.next_slot || null;
-  const currentDaySummary = stageForecast?.current_day_summary || null;
-  const nextDaySummary = stageForecast?.next_day_summary || null;
+  const operationalContext = stageForecast?.operational_context || {};
+  const escalationThreshold = Number(stageForecast?.escalation_threshold ?? 30);
+  const upcomingHours = stageForecast?.upcoming_hours || [];
+  const upcomingDays = stageForecast?.upcoming_days || [];
   const stageAlerts = stageForecast?.alerts || [];
   const topFlowRisks = eventFlowForecast?.top_delay_flows || [];
+  const contextBadges = Object.values(operationalContext).filter(Boolean);
 
   const stageRiskOrZero = (slot, key) => Number(slot?.[key] ?? 0);
   const maxStageRisk = (slot) => Math.max(
@@ -244,6 +245,15 @@ useEffect(() => {
         <h3>Proactive Analytics & Forecasting</h3>
         <div className="forecast_grid">
           <div className="forecast_chart">
+            <div className="forecast_context_row">
+              {contextBadges.map((badge) => (
+                <div key={badge.label} className={`forecast_context_badge forecast_context_badge_${badge.status || 'stable'}`}>
+                  <span className="forecast_context_label">{badge.label}</span>
+                  <strong className="forecast_context_value">{badge.value_label}</strong>
+                  <span className="forecast_context_detail">{badge.detail}</span>
+                </div>
+              ))}
+            </div>
             {/* Stage-specific bottleneck risk by hour (today) */}
             <Plot
               data={[
@@ -253,7 +263,7 @@ useEffect(() => {
                   type: 'scatter',
                   mode: 'lines',
                   name: 'Vitals',
-                  line: { color: '#2563eb', width: 2 }
+                  line: { color: '#2E5BFF', width: 3, dash: 'solid' }
                 },
                 {
                   x: stageHourlyRisk.map((r) => r.time_label),
@@ -261,7 +271,7 @@ useEffect(() => {
                   type: 'scatter',
                   mode: 'lines',
                   name: 'Med Recon',
-                  line: { color: '#f59e0b', width: 2 }
+                  line: { color: '#F59E0B', width: 3, dash: 'solid' }
                 },
                 {
                   x: stageHourlyRisk.map((r) => r.time_label),
@@ -269,7 +279,7 @@ useEffect(() => {
                   type: 'scatter',
                   mode: 'lines',
                   name: 'Dispensing',
-                  line: { color: '#9333ea', width: 2 }
+                  line: { color: '#10B981', width: 3, dash: 'solid' }
                 },
                 {
                   x: stageHourlyRisk.map((r) => r.time_label),
@@ -277,7 +287,7 @@ useEffect(() => {
                   type: 'scatter',
                   mode: 'lines',
                   name: 'Discharge',
-                  line: { color: '#dc2626', width: 2 }
+                  line: { color: '#64748B', width: 3, dash: 'dash' }
                 }
               ]}
               layout={{
@@ -286,76 +296,128 @@ useEffect(() => {
                 xaxis: {
                   title: { text: 'Hour (Today)', standoff: 15 },
                   automargin: true,
+                  showgrid: true,
+                  gridcolor: '#F1F5F9',
                   tickangle: -45
                 },
                 yaxis: {
                   title: { text: 'Bottleneck Risk (%)', standoff: 15 },
                   automargin: true,
+                  showgrid: true,
+                  gridcolor: '#F1F5F9',
                   range: [0, 100]
                 },
                 legend: { orientation: 'h', y: -0.25 },
                 paper_bgcolor: 'transparent',
                 plot_bgcolor: 'transparent',
-                shapes: contextNow ? [
+                shapes: [
                   {
                     type: 'line',
-                    x0: `${String(contextNow.hour_of_day).padStart(2, '0')}:00`,
-                    x1: `${String(contextNow.hour_of_day).padStart(2, '0')}:00`,
-                    y0: 0,
-                    y1: 100,
-                    line: { color: '#0f172a', dash: 'dot', width: 1 }
-                  }
-                ] : []
+                    x0: stageHourlyRisk[0]?.time_label || '00:00',
+                    x1: stageHourlyRisk[stageHourlyRisk.length - 1]?.time_label || '23:00',
+                    y0: escalationThreshold,
+                    y1: escalationThreshold,
+                    line: { color: '#c2410c', dash: 'dash', width: 1.5 }
+                  },
+                  ...(contextNow ? [
+                    {
+                      type: 'line',
+                      x0: `${String(contextNow.hour_of_day).padStart(2, '0')}:00`,
+                      x1: `${String(contextNow.hour_of_day).padStart(2, '0')}:00`,
+                      y0: 0,
+                      y1: 100,
+                      line: { color: '#0f172a', dash: 'dot', width: 1 }
+                    }
+                  ] : [])
+                ],
+                annotations: [
+                  {
+                    x: stageHourlyRisk[stageHourlyRisk.length - 1]?.time_label || '23:00',
+                    y: escalationThreshold,
+                    xanchor: 'right',
+                    yanchor: 'bottom',
+                    text: 'Escalation Threshold',
+                    showarrow: false,
+                    font: { size: 11, color: '#9a3412' },
+                    bgcolor: 'rgba(255,255,255,0.85)'
+                  },
+                  ...(contextNow ? [
+                    {
+                      x: `${String(contextNow.hour_of_day).padStart(2, '0')}:00`,
+                      y: 100,
+                      xanchor: 'left',
+                      yanchor: 'top',
+                      text: 'Now',
+                      showarrow: false,
+                      font: { size: 11, color: '#0f172a' },
+                      bgcolor: 'rgba(255,255,255,0.85)'
+                    }
+                  ] : [])
+                ]
               }}
               useResizeHandler={true}
               style={{ width: '100%' }}
             />
           </div>
           <div className="risk_cards_container">
-            <div className="risk_card">
-              <h4>Now</h4>
-              <p className="risk_metric">{contextNow ? `${contextNow.day_label} ${String(contextNow.hour_of_day).padStart(2, '0')}:00` : 'N/A'}</p>
-              <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(currentSlot))}%</p>
-            </div>
-            <div className="risk_card">
-              <h4>Next Hour</h4>
-              <p className="risk_metric">{contextNow ? `${contextNow.next_hour_day_label || contextNow.day_label} ${String(contextNow.next_hour_of_day).padStart(2, '0')}:00` : 'N/A'}</p>
-              <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(nextSlot))}%</p>
-            </div>
-            <div className="risk_card">
-              <h4>Today (Day-Level)</h4>
-              <p className="risk_metric">{contextNow ? contextNow.day_label : 'N/A'}</p>
-              <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(currentDaySummary))}%</p>
-            </div>
-            <div className="risk_card">
-              <h4>Next Day (Day-Level)</h4>
-              <p className="risk_metric">{contextNow ? contextNow.next_day_label : 'N/A'}</p>
-              <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(nextDaySummary))}%</p>
-            </div>
-            <div className="risk_card">
+            {upcomingHours.map((slot) => (
+              <div key={`hour-${slot.forecast_offset_hours}-${slot.day_of_week}-${slot.hour_of_day}`} className="risk_card risk_card_hour">
+                <h4>{`+${slot.forecast_offset_hours}h`}</h4>
+                <p className="risk_metric">{`${slot.day_label} ${String(slot.hour_of_day).padStart(2, '0')}:00`}</p>
+                <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(slot))}%</p>
+              </div>
+            ))}
+            {upcomingDays.map((slot) => (
+              <div key={`day-${slot.forecast_offset_days}-${slot.day_of_week}`} className="risk_card risk_card_day">
+                <h4>{`+${slot.forecast_offset_days}d`}</h4>
+                <p className="risk_metric">{slot.day_label}</p>
+                <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(slot))}%</p>
+              </div>
+            ))}
+            <div className="risk_card risk_card_recommendations risk_card_wide">
               <h4>Prep Recommendations</h4>
               {stageAlerts.length ? (
-                <ul className="forecast_alert_list">
+                <div className="forecast_recommendation_list">
                   {stageAlerts.slice(0, 3).map((alert) => (
-                    <li key={alert.stage}>
-                      <strong>{alert.stage_label}:</strong> {alert.recommendation}
-                    </li>
+                    <article key={alert.stage} className={`forecast_recommendation_item forecast_recommendation_${alert.priority || 'high'}`}>
+                      <div className="forecast_recommendation_header">
+                        <strong>{alert.stage_label}</strong>
+                        <span className="forecast_recommendation_time">{`${alert.target_day_label} ${alert.target_time_label}`}</span>
+                      </div>
+                      <p className="forecast_recommendation_message">{alert.message}</p>
+                      <p className="forecast_recommendation_action">{alert.recommendation}</p>
+                      <p className="forecast_recommendation_staffing">Staffing Advisory: {alert.staffing_advisory}</p>
+                    </article>
                   ))}
-                </ul>
+                </div>
               ) : (
                 <p className="risk_metric">No elevated next-hour stage risk detected.</p>
               )}
             </div>
-            <div className="risk_card">
+            <div className="risk_card risk_card_pathways risk_card_wide">
               <h4>High-Risk Patient Pathways</h4>
               {topFlowRisks.length ? (
-                <ul className="forecast_alert_list">
+                <div className="forecast_pathway_list">
                   {topFlowRisks.slice(0, 3).map((flow) => (
-                    <li key={flow.event_flow}>
-                      <strong>{flow.event_flow_label}</strong>: {Math.round(flow.avg_los_min)} min avg LOS ({flow.share_label || `${flow.share_pct}%`} of stays, n={flow.stay_count})
-                    </li>
+                    <article key={flow.event_flow} className="forecast_pathway_item">
+                      <div className="forecast_pathway_header">
+                        <strong>{Math.round(flow.avg_los_min)} min avg LOS</strong>
+                        <span className="forecast_pathway_driver">Primary Driver: {flow.primary_driver || 'Throughput Friction'}</span>
+                      </div>
+                      <div className="forecast_pathway_steps">
+                        {(flow.pathway_steps || []).map((step) => (
+                          <span key={`${flow.event_flow}-${step.key}`} className={`forecast_pathway_step ${step.is_primary ? 'is_primary' : ''}`}>
+                            {step.label}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="forecast_pathway_meta">
+                        Bottleneck Stage: <strong>{flow.primary_stage_label || 'Mixed'}</strong> · {flow.share_label || `${flow.share_pct}%`} of stays · n={flow.stay_count} · {flow.high_acuity_pct || 0}% high acuity
+                      </p>
+                      <p className="forecast_pathway_note">{flow.recommendation}</p>
+                    </article>
                   ))}
-                </ul>
+                </div>
               ) : (
                 <p className="risk_metric">No event flow pathway trends available yet.</p>
               )}

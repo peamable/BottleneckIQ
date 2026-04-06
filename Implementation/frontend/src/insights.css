@@ -34,14 +34,14 @@
 
 .forecast_grid, .audit_grid {
   display: grid;
-  grid-template-columns: 1.7fr 1.3fr;
+  grid-template-columns: 1.35fr 1.65fr;
   gap: 1.5rem;
   align-items: start;
 }
 
 .risk_cards_container {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.6rem;
   align-content: start;
 }
@@ -51,10 +51,35 @@
   border-radius: 10px;
   padding: 0.6rem 0.65rem;
   background: #f8fafc;
+  border-left-width: 5px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
 }
 
-.risk_card:nth-child(5),
-.risk_card:nth-child(6) {
+.risk_card_hour {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  border-left-color: #2E5BFF;
+}
+
+.risk_card_day {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  border-left-color: #64748B;
+}
+
+.risk_card_recommendations {
+  background: #fffbeb;
+  border-color: #fde68a;
+  border-left-color: #b45309;
+}
+
+.risk_card_pathways {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  border-left-color: #334155;
+}
+
+.risk_card_wide {
   grid-column: 1 / -1;
 }
 
@@ -76,6 +101,142 @@
   font-weight: 700;
 }
 
+.forecast_context_row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.forecast_context_badge {
+  border-radius: 12px;
+  border: 1px solid #dbeafe;
+  padding: 0.75rem 0.85rem;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.forecast_context_badge_stable {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.forecast_context_badge_elevated {
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+
+.forecast_context_badge_high {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.forecast_context_label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.forecast_context_value {
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
+.forecast_context_detail {
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.forecast_recommendation_list,
+.forecast_pathway_list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.forecast_recommendation_item,
+.forecast_pathway_item {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.8rem 0.9rem;
+  background: #ffffff;
+}
+
+.forecast_recommendation_high {
+  border-left: 4px solid #f59e0b;
+}
+
+.forecast_recommendation_critical {
+  border-left: 4px solid #dc2626;
+}
+
+.forecast_recommendation_header,
+.forecast_pathway_header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.35rem;
+  color: #0f172a;
+}
+
+.forecast_recommendation_time,
+.forecast_pathway_driver {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #9a3412;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+}
+
+.forecast_recommendation_message,
+.forecast_recommendation_action,
+.forecast_recommendation_staffing,
+.forecast_pathway_meta,
+.forecast_pathway_note {
+  margin: 0.25rem 0 0;
+  font-size: 0.83rem;
+  color: #334155;
+}
+
+.forecast_recommendation_action {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.forecast_recommendation_staffing {
+  color: #7c2d12;
+}
+
+.forecast_pathway_steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.forecast_pathway_step {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+}
+
+.forecast_pathway_step.is_primary {
+  color: #991b1b;
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
 .forecast_alert_list {
   margin: 0.25rem 0 0;
   padding-left: 1.1rem;
@@ -88,12 +249,25 @@
     grid-template-columns: 1fr;
   }
 
+  .forecast_context_row {
+    grid-template-columns: 1fr;
+  }
+
+  .risk_cards_container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .risk_card_wide {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
   .risk_cards_container {
     grid-template-columns: 1fr;
   }
 
-  .risk_card:nth-child(5),
-  .risk_card:nth-child(6) {
+  .risk_card_wide {
     grid-column: auto;
   }
 }

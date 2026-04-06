@@ -96,6 +96,25 @@ def get_stage_temporal_forecast(upload_id: Optional[int] = None, lookback: int =
     effective_id = upload_id or get_latest_upload_id()
     day_labels = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     stages = ["vital", "medrecon", "dispen", "discharge"]
+    stage_details = {
+        "vital": {
+            "label": "Vitals",
+            "directive": "Open a rapid assessment lane and pull vitals forward before arrivals queue.",
+        },
+        "medrecon": {
+            "label": "Med Recon",
+            "directive": "Advise the Pharmacy lead to prioritize discharge reconciliations before backlog builds.",
+        },
+        "dispen": {
+            "label": "Dispensing",
+            "directive": "Pre-stage discharge medications and clear pending dispense tasks before the surge.",
+        },
+        "discharge": {
+            "label": "Discharge",
+            "directive": "Prioritize discharge paperwork and bed turnaround coordination before capacity tightens.",
+        },
+    }
+    escalation_threshold = 30.0
 
     empty_hourly = [
         {
@@ -110,6 +129,34 @@ def get_stage_temporal_forecast(upload_id: Optional[int] = None, lookback: int =
         for h in range(24)
     ]
 
+    def build_empty_slot(day_idx: int, hour_idx: int) -> dict:
+        return {
+            "day_of_week": day_idx,
+            "day_label": day_labels[day_idx],
+            "hour_of_day": hour_idx,
+            "time_label": f"{hour_idx:02d}:00",
+            "vital": 0.0,
+            "medrecon": 0.0,
+            "dispen": 0.0,
+            "discharge": 0.0,
+            "sample_size": 0,
+        }
+
+    empty_operational_context = {
+        "ed_load": {
+            "label": "ED Load",
+            "value_label": "0 pts/hr",
+            "status": "stable",
+            "detail": "No recent hourly load pattern available",
+        },
+        "acuity_mix": {
+            "label": "High-Acuity Share",
+            "value_label": "0%",
+            "status": "stable",
+            "detail": "No recent acuity mix available",
+        },
+    }
+
     now_dt = datetime.now()
     next_dt = now_dt + timedelta(hours=1)
     tomorrow_dt = now_dt + timedelta(days=1)
@@ -122,6 +169,28 @@ def get_stage_temporal_forecast(upload_id: Optional[int] = None, lookback: int =
             "day_labels": day_labels,
             "today_hourly_risk": empty_hourly,
             "weekday_risk": [],
+            "operational_context": empty_operational_context,
+            "escalation_threshold": escalation_threshold,
+            "upcoming_hours": [
+                {
+                    **build_empty_slot((now_dt + timedelta(hours=offset)).weekday(), (now_dt + timedelta(hours=offset)).hour),
+                    "forecast_offset_hours": offset,
+                }
+                for offset in range(1, 5)
+            ],
+            "upcoming_days": [
+                {
+                    "day_of_week": (now_dt + timedelta(days=offset)).weekday(),
+                    "day_label": day_labels[(now_dt + timedelta(days=offset)).weekday()],
+                    "forecast_offset_days": offset,
+                    "sample_size": 0,
+                    "vital": 0.0,
+                    "medrecon": 0.0,
+                    "dispen": 0.0,
+                    "discharge": 0.0,
+                }
+                for offset in range(1, 5)
+            ],
             "current_context": {
                 "day_of_week": now_dt.weekday(),
                 "day_label": day_labels[now_dt.weekday()],
@@ -176,8 +245,80 @@ def get_stage_temporal_forecast(upload_id: Optional[int] = None, lookback: int =
          AND el.stay_id = fe.stay_id
     """)
 
+    temporal_context_query = text("""
+        SELECT
+            hour_of_day,
+            AVG(total_volume) AS avg_volume,
+            AVG(COALESCE(acuity_1, 0) + COALESCE(acuity_2, 0)) AS avg_high_acuity,
+            AVG(
+                COALESCE(acuity_1, 0) + COALESCE(acuity_2, 0) + COALESCE(acuity_3, 0)
+                + COALESCE(acuity_4, 0) + COALESCE(acuity_5, 0)
+            ) AS avg_total_acuity
+        FROM temporal_summary
+        WHERE upload_id IN :u_ids
+        GROUP BY hour_of_day
+        ORDER BY hour_of_day
+    """)
+
     with engine.connect() as conn:
         df = pd.read_sql(base_query, conn, params={"u_ids": tuple(recent_upload_ids)})
+        temporal_rows = conn.execute(temporal_context_query, {"u_ids": tuple(recent_upload_ids)}).mappings().all()
+
+    temporal_hour_map = {
+        int(row["hour_of_day"]): {
+            "avg_volume": float(row["avg_volume"] or 0.0),
+            "avg_high_acuity": float(row["avg_high_acuity"] or 0.0),
+            "avg_total_acuity": float(row["avg_total_acuity"] or 0.0),
+        }
+        for row in temporal_rows
+        if row["hour_of_day"] is not None
+    }
+    volume_baseline = pd.Series([row["avg_volume"] for row in temporal_hour_map.values()], dtype="float64")
+    volume_p75 = float(volume_baseline.quantile(0.75)) if not volume_baseline.empty else 0.0
+    volume_p90 = float(volume_baseline.quantile(0.90)) if not volume_baseline.empty else 0.0
+    current_temporal = temporal_hour_map.get(now_dt.hour, {"avg_volume": 0.0, "avg_high_acuity": 0.0, "avg_total_acuity": 0.0})
+    expected_volume = round(float(current_temporal["avg_volume"]), 1)
+    high_acuity_pct = round(
+        (float(current_temporal["avg_high_acuity"]) / float(current_temporal["avg_total_acuity"]) * 100.0)
+        if float(current_temporal["avg_total_acuity"]) > 0
+        else 0.0,
+        1,
+    )
+
+    if expected_volume >= volume_p90 and expected_volume > 0:
+        load_status = "high"
+        load_detail = "Above recent hourly baseline"
+    elif expected_volume >= volume_p75 and expected_volume > 0:
+        load_status = "elevated"
+        load_detail = "Near the upper end of recent hourly load"
+    else:
+        load_status = "stable"
+        load_detail = "Within recent hourly baseline"
+
+    if high_acuity_pct >= 35.0:
+        acuity_status = "high"
+        acuity_detail = "Acuity 1-2 demand is likely to increase downstream pressure"
+    elif high_acuity_pct >= 20.0:
+        acuity_status = "elevated"
+        acuity_detail = "Moderate Acuity 1-2 mix expected"
+    else:
+        acuity_status = "stable"
+        acuity_detail = "High-acuity arrivals are not driving the current pattern"
+
+    operational_context = {
+        "ed_load": {
+            "label": "ED Load",
+            "value_label": f"{int(round(expected_volume))} pts/hr",
+            "status": load_status,
+            "detail": load_detail,
+        },
+        "acuity_mix": {
+            "label": "High-Acuity Share",
+            "value_label": f"{high_acuity_pct:.0f}%",
+            "status": acuity_status,
+            "detail": acuity_detail,
+        },
+    }
 
     if df.empty:
         return {
@@ -187,6 +328,28 @@ def get_stage_temporal_forecast(upload_id: Optional[int] = None, lookback: int =
             "day_labels": day_labels,
             "today_hourly_risk": empty_hourly,
             "weekday_risk": [],
+            "operational_context": empty_operational_context,
+            "escalation_threshold": escalation_threshold,
+            "upcoming_hours": [
+                {
+                    **build_empty_slot((now_dt + timedelta(hours=offset)).weekday(), (now_dt + timedelta(hours=offset)).hour),
+                    "forecast_offset_hours": offset,
+                }
+                for offset in range(1, 5)
+            ],
+            "upcoming_days": [
+                {
+                    "day_of_week": (now_dt + timedelta(days=offset)).weekday(),
+                    "day_label": day_labels[(now_dt + timedelta(days=offset)).weekday()],
+                    "forecast_offset_days": offset,
+                    "sample_size": 0,
+                    "vital": 0.0,
+                    "medrecon": 0.0,
+                    "dispen": 0.0,
+                    "discharge": 0.0,
+                }
+                for offset in range(1, 5)
+            ],
             "current_context": {
                 "day_of_week": now_dt.weekday(),
                 "day_label": day_labels[now_dt.weekday()],
@@ -337,28 +500,63 @@ def get_stage_temporal_forecast(upload_id: Optional[int] = None, lookback: int =
     current_day_summary = weekday_map.get(now_dt.weekday(), weighted_fallback)
     next_day_summary = weekday_map.get(tomorrow_dt.weekday(), weighted_fallback)
 
-    alerts = []
-    if next_slot is not None:
+    upcoming_hours = []
+    for offset in range(1, 5):
+        future_dt = now_dt + timedelta(hours=offset)
+        slot = get_slot(future_dt.weekday(), future_dt.hour) or build_empty_slot(future_dt.weekday(), future_dt.hour)
+        upcoming_hours.append({
+            **slot,
+            "forecast_offset_hours": offset,
+        })
+
+    upcoming_days = []
+    for offset in range(1, 5):
+        future_dt = now_dt + timedelta(days=offset)
+        day_summary = weekday_map.get(future_dt.weekday(), weighted_fallback)
+        upcoming_days.append({
+            **day_summary,
+            "day_of_week": future_dt.weekday(),
+            "day_label": day_labels[future_dt.weekday()],
+            "forecast_offset_days": offset,
+        })
+
+    alert_by_stage = {}
+    baseline_slot = current_slot or build_empty_slot(now_dt.weekday(), now_dt.hour)
+    for slot in upcoming_hours:
         for stage in stages:
-            next_risk = float(next_slot[stage])
-            now_risk = float(current_slot[stage]) if current_slot is not None else 0.0
-            if next_risk >= 30.0 or next_risk >= now_risk + 5.0:
-                stage_name = {
-                    "vital": "Vitals",
-                    "medrecon": "Medication Reconciliation",
-                    "dispen": "Medication Dispensing",
-                    "discharge": "Discharge",
-                }[stage]
-                alerts.append(
-                    {
-                        "stage": stage,
-                        "stage_label": stage_name,
-                        "risk_now": round(now_risk, 1),
-                        "risk_next": round(next_risk, 1),
-                        "message": f"{stage_name} bottleneck risk rises next hour ({round(now_risk,1)}% -> {round(next_risk,1)}%).",
-                        "recommendation": f"Prepare {stage_name.lower()} capacity before {next_dt.hour:02d}:00.",
-                    }
-                )
+            next_risk = float(slot[stage])
+            now_risk = float(baseline_slot[stage]) if baseline_slot is not None else 0.0
+            if next_risk < escalation_threshold and next_risk < now_risk + 5.0:
+                continue
+
+            donor_candidates = [other for other in stages if other != stage]
+            donor_stage = min(donor_candidates, key=lambda candidate: float(slot[candidate])) if donor_candidates else stage
+            candidate_alert = {
+                "stage": stage,
+                "stage_label": stage_details[stage]["label"],
+                "forecast_offset_hours": int(slot["forecast_offset_hours"]),
+                "target_day_label": slot["day_label"],
+                "target_time_label": slot["time_label"],
+                "risk_now": round(now_risk, 1),
+                "risk_next": round(next_risk, 1),
+                "priority": "critical" if next_risk >= 40.0 else "high",
+                "message": f"High {stage_details[stage]['label']} delay predicted for {slot['day_label']} {slot['time_label']}.",
+                "recommendation": stage_details[stage]["directive"],
+                "staffing_advisory": (
+                    f"Shift flex support from {stage_details[donor_stage]['label']} to {stage_details[stage]['label']} "
+                    f"for the {slot['time_label']} window."
+                ),
+                "support_stage": donor_stage,
+                "support_stage_label": stage_details[donor_stage]["label"],
+            }
+            existing = alert_by_stage.get(stage)
+            if existing is None or candidate_alert["risk_next"] > existing["risk_next"]:
+                alert_by_stage[stage] = candidate_alert
+
+    alerts = sorted(
+        alert_by_stage.values(),
+        key=lambda item: (-item["risk_next"], item["forecast_offset_hours"], item["stage_label"]),
+    )
 
     return {
         "upload_id": effective_id,
@@ -367,6 +565,10 @@ def get_stage_temporal_forecast(upload_id: Optional[int] = None, lookback: int =
         "day_labels": day_labels,
         "today_hourly_risk": today_hourly_risk,
         "weekday_risk": weekday_risk,
+        "operational_context": operational_context,
+        "escalation_threshold": escalation_threshold,
+        "upcoming_hours": upcoming_hours,
+        "upcoming_days": upcoming_days,
         "current_context": {
             "day_of_week": now_dt.weekday(),
             "day_label": day_labels[now_dt.weekday()],
@@ -420,16 +622,24 @@ def get_event_flow_forecast_insights(upload_id: Optional[int] = None, lookback: 
 
     flows_query = text("""
         SELECT
-            event_flow,
-            COUNT(*) AS stay_count,
-            AVG(total_ed_stay_time) AS avg_los_min,
-            SUM(CASE WHEN skipped_stages IS NOT NULL AND skipped_stages <> '' THEN 1 ELSE 0 END) AS skipped_count
-        FROM event_log
-        WHERE upload_id IN :u_ids
-          AND event_flow IS NOT NULL
-          AND event_flow <> ''
-          AND total_ed_stay_time IS NOT NULL
-        GROUP BY event_flow
+                        el.event_flow,
+                        COUNT(*) AS stay_count,
+                        AVG(el.total_ed_stay_time) AS avg_los_min,
+                        SUM(CASE WHEN el.skipped_stages IS NOT NULL AND el.skipped_stages <> '' THEN 1 ELSE 0 END) AS skipped_count,
+                        AVG(el.time_to_vital) AS avg_time_to_vital,
+                        AVG(el.time_to_medrecon) AS avg_time_to_medrecon,
+                        AVG(el.time_to_dispen) AS avg_time_to_dispen,
+                        AVG(el.time_to_discharge) AS avg_time_to_discharge,
+                        SUM(CASE WHEN si.scale_level IS NOT NULL AND si.scale_level <= 2 THEN 1 ELSE 0 END) AS high_acuity_count
+                FROM event_log el
+                LEFT JOIN stay_info si
+                    ON si.upload_id = el.upload_id
+                 AND si.stay_id = el.stay_id
+                WHERE el.upload_id IN :u_ids
+                    AND el.event_flow IS NOT NULL
+                    AND el.event_flow <> ''
+                    AND el.total_ed_stay_time IS NOT NULL
+                GROUP BY el.event_flow
         HAVING COUNT(*) >= 5
         ORDER BY avg_los_min DESC
         LIMIT 8
@@ -449,6 +659,30 @@ def get_event_flow_forecast_insights(upload_id: Optional[int] = None, lookback: 
         labels = [flow_step_map.get(p, p) for p in parts if p]
         return " -> ".join(labels)
 
+    stage_display = {
+        "entry": "Entry",
+        "triage": "Triage",
+        "vital": "Vitals",
+        "medrecon": "Med Recon",
+        "dispen": "Dispensing",
+        "discharge": "Discharge",
+    }
+
+    def infer_primary_driver(primary_stage: Optional[str], high_acuity_pct: float, skipped_pct: float) -> str:
+        if high_acuity_pct >= 35.0:
+            return "Acuity 1/2 Surge"
+        if primary_stage == "medrecon":
+            return "High Pharmacy Volume"
+        if primary_stage == "dispen":
+            return "Medication Queue"
+        if primary_stage == "discharge":
+            return "Discharge Backlog"
+        if primary_stage == "vital":
+            return "Front-Door Assessment Load"
+        if skipped_pct >= 25.0:
+            return "Pathway Variability"
+        return "Throughput Friction"
+
     with engine.connect() as conn:
         total_row = conn.execute(total_query, {"u_ids": tuple(recent_upload_ids)}).mappings().first()
         flow_rows = conn.execute(flows_query, {"u_ids": tuple(recent_upload_ids)}).mappings().all()
@@ -467,9 +701,30 @@ def get_event_flow_forecast_insights(upload_id: Optional[int] = None, lookback: 
         stay_count = int(row["stay_count"] or 0)
         avg_los_min = float(row["avg_los_min"] or 0)
         skipped_count = int(row["skipped_count"] or 0)
+        high_acuity_count = int(row["high_acuity_count"] or 0)
         skipped_pct = round((skipped_count / stay_count) * 100, 1) if stay_count else 0.0
+        high_acuity_pct = round((high_acuity_count / stay_count) * 100, 1) if stay_count else 0.0
         share_pct = round((stay_count / total_count) * 100, 1)
         share_label = "<0.1%" if stay_count > 0 and share_pct == 0.0 else f"{share_pct}%"
+
+        flow_parts = [flow_step_map.get(p.strip(), p.strip()) for p in str(row["event_flow"]).split("->") if p.strip()]
+        stage_averages = {
+            "vital": float(row["avg_time_to_vital"] or 0.0),
+            "medrecon": float(row["avg_time_to_medrecon"] or 0.0),
+            "dispen": float(row["avg_time_to_dispen"] or 0.0),
+            "discharge": float(row["avg_time_to_discharge"] or 0.0),
+        }
+        candidate_primary_stages = [stage for stage in stage_averages if stage in flow_parts and stage_averages[stage] > 0]
+        primary_stage = max(candidate_primary_stages, key=lambda stage: stage_averages[stage]) if candidate_primary_stages else None
+        primary_driver = infer_primary_driver(primary_stage, high_acuity_pct, skipped_pct)
+        pathway_steps = [
+            {
+                "key": step,
+                "label": stage_display.get(step, str(step).title()),
+                "is_primary": step == primary_stage,
+            }
+            for step in flow_parts
+        ]
 
         top_delay_flows.append(
             {
@@ -480,10 +735,15 @@ def get_event_flow_forecast_insights(upload_id: Optional[int] = None, lookback: 
                 "share_pct": share_pct,
                 "share_label": share_label,
                 "skipped_stage_pct": skipped_pct,
+                "high_acuity_pct": high_acuity_pct,
+                "pathway_steps": pathway_steps,
+                "primary_stage": primary_stage,
+                "primary_stage_label": stage_display.get(primary_stage, "Mixed") if primary_stage else "Mixed",
+                "primary_driver": primary_driver,
                 "recommendation": (
                     "Standardize handoff checkpoints for this pathway"
                     if skipped_pct >= 25.0
-                    else "Pre-stage staff/resources for this pathway during peaks"
+                    else f"Pre-stage support around {stage_display.get(primary_stage, 'the primary bottleneck stage').lower()} during peak windows"
                 ),
             }
         )

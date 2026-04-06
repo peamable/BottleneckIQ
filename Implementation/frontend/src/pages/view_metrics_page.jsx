@@ -56,11 +56,11 @@ const ViewMetrics = () => {
   
   // Clinical stage configuration with colors matching Recharts
   const clinicalStageConfig = [
-    { key: 'time_to_triage', label: 'Time to Triage', color: '#2563eb' },
-    { key: 'time_to_vital', label: 'Time to Vitals', color: '#ef4444' },
-    { key: 'time_to_medrecon', label: 'Time to MedRecon', color: '#f59e0b' },
-    { key: 'time_to_dispen', label: 'Time to Dispense', color: '#10b981' },
-    { key: 'time_to_discharge', label: 'Time to Discharge', color: '#8b5cf6' }
+      { key: 'time_to_triage', label: 'Time to Triage', color: '#7c3aed' },
+      { key: 'time_to_vital', label: 'Time to Vitals', color: '#be185d' },
+      { key: 'time_to_medrecon', label: 'Time to MedRecon', color: '#b45309' },
+    { key: 'time_to_dispen', label: 'Time to Dispense', color: '#16a34a' },
+    { key: 'time_to_discharge', label: 'Time to Discharge', color: '#0f172a' }
   ];
   
   const trendStageMap = {
