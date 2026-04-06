@@ -49,42 +49,42 @@ async def get_demographics_audit( upload_id: Optional[int] = Query(None)
         
     }
 
-@router.get("/chief_complaint_counts")
-async def get_chief_complaint_counts( upload_id: Optional[int] = Query(None)
-):
+# @router.get("/chief_complaint_counts")
+# async def get_chief_complaint_counts( upload_id: Optional[int] = Query(None)
+# ):
+#     effective_id = upload_id or service.get_latest_upload_id()
+
+#     if effective_id is None:
+#         return {
+#             "upload_id": None,
+#             "chief_complaint_counts": [],
+#             "message": "No data available"
+#         }
+
+#     return {
+#         "upload_id": effective_id,
+#         "chief_complaint_counts": service.get_chief_complaint_counts(effective_id)
+#     }
+
+@router.get("/bed-occupancy-analysis-by-case-mix")
+async def get_bed_occupancy_analysis_by_case_mix(upload_id: Optional[int] = Query(None)):
     effective_id = upload_id or service.get_latest_upload_id()
 
     if effective_id is None:
         return {
             "upload_id": None,
-            "chief_complaint_counts": [],
+            "bed_occupancy_analysis_by_case_mix": [],
             "message": "No data available"
         }
 
     return {
         "upload_id": effective_id,
-        "chief_complaint_counts": service.get_chief_complaint_counts(effective_id)
+        "bed_occupancy_analysis_by_case_mix": service.get_bed_occupancy_analysis_by_case_mix(effective_id)
     }
 
-@router.get("/chief_complaint_bottlenecks")
-async def get_chief_complaint_bottlenecks(upload_id: Optional[int] = Query(None)):
-    effective_id = upload_id or service.get_latest_upload_id()
-
-    if effective_id is None:
-        return {
-            "upload_id": None,
-            "chief_complaint_bottlenecks": [],
-            "message": "No data available"
-        }
-
-    return {
-        "upload_id": effective_id,
-        "chief_complaint_bottlenecks": service.get_chief_complaint_bottleneck_insights(effective_id)
-    }
-
-@router.get("/volume-efficiency-correlation")
-async def get_volume_efficiency_correlation():
-    return service.get_volume_efficiency_correlation()
+@router.get("/p90-total-ed-stay-time-volume-correlations")
+async def get_p90_total_ed_stay_time_volume_correlations():
+    return service.get_p90_total_ed_stay_time_volume_correlations()
 
 @router.get("/disposition_milestone_analysis")
 async def get_disposition_milestone_analysis(upload_id: Optional[int] = Query(None)):

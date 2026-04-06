@@ -675,7 +675,7 @@ def get_equity_audit(upload_id: int) -> list[dict]:
 
     return equity_audit
 
-def get_chief_complaint_bottleneck_insights(upload_id: int):
+def get_bed_occupancy_analysis_by_case_mix(upload_id: int):
     query = text("""
         SELECT
             e.stay_id,
@@ -874,8 +874,8 @@ def get_chief_complaint_bottleneck_insights(upload_id: int):
         for _, row in stats.iterrows()
     ]
 
-# Volume vs Efficiency correlation scatter plot visualization
-def get_volume_efficiency_correlation():
+# P90 total ED stay time vs patient volume correlation scatter plot visualization
+def get_p90_total_ed_stay_time_volume_correlations():
     sql = text("""
         SELECT
             u.upload_id,
@@ -895,11 +895,11 @@ def get_volume_efficiency_correlation():
         rows = conn.execute(sql).mappings().all()
 
     return {
-        "correlation_chart": [
+        "p90_total_ed_stay_time_volume_correlations": [
             {
                 "upload_id": row["upload_id"],
                 "patient_volume": int(row["patient_volume"]),
-                "p90_wait_time": float(row["p90_value"])
+                "p90_total_ed_stay_time": float(row["p90_value"])
             }
             for row in rows
         ]
