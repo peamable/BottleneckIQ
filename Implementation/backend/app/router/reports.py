@@ -11,7 +11,7 @@ import json
 from datetime import datetime
 from app.services.insights_services import (
     get_disposition_mix, get_top_chief_complaints, get_equity_audit,
-    get_chief_complaint_bottleneck_insights, get_volume_efficiency_correlation,
+    get_bed_occupancy_analysis_by_case_mix, get_p90_total_ed_stay_time_volume_correlations,
     get_disposition_milestone_breakdown, get_acuity_level_breakdown, get_temporal_heatmap,
     get_latest_upload_id
 )
@@ -67,8 +67,8 @@ def generate_pdf_report(background_tasks: BackgroundTasks):
                 data["demographics"] = {
                     "equity_audit": get_equity_audit(effective_id)
                 }
-                data["bottlenecks"] = get_chief_complaint_bottleneck_insights(effective_id)
-                data["volume_efficiency"] = get_volume_efficiency_correlation()
+                data["bed_occupancy_analysis_by_case_mix"] = get_bed_occupancy_analysis_by_case_mix(effective_id)
+                data["p90_total_ed_stay_time_volume_correlations"] = get_p90_total_ed_stay_time_volume_correlations()
                 data["dispositions"] = get_disposition_milestone_breakdown(effective_id)
                 data["acuity"] = get_acuity_level_breakdown(effective_id)
                 data["temporal_heatmap"] = get_temporal_heatmap()
@@ -78,8 +78,8 @@ def generate_pdf_report(background_tasks: BackgroundTasks):
                 data = {
                     "logistics": {"logistics_root_cause": {"disposition_mix": [], "top_chief_complaints": []}},
                     "demographics": {"equity_audit": []},
-                    "bottlenecks": [],
-                    "volume_efficiency": [],
+                    "bed_occupancy_analysis_by_case_mix": [],
+                    "p90_total_ed_stay_time_volume_correlations": [],
                     "dispositions": [],
                     "acuity": [],
                     "temporal_heatmap": {"volume_matrix": [[0]*4 for _ in range(7)], "day_labels": [], "slice_labels": []},
@@ -132,14 +132,14 @@ def generate_pdf_report(background_tasks: BackgroundTasks):
                 story.append(table)
                 story.append(Spacer(1, 15))
         
-        # Chief Complaint Bottlenecks
-        if 'bottlenecks' in data:
-            story.append(Paragraph("Chief Complaint Bottlenecks", styles['Heading3']))
-            bottlenecks = data['bottlenecks']
+        # Bed Occupancy Analysis by Case Mix
+        if 'bed_occupancy_analysis_by_case_mix' in data:
+            story.append(Paragraph("Bed Occupancy Analysis by Case Mix", styles['Heading3']))
+            bed_occupancy_analysis_by_case_mix = data['bed_occupancy_analysis_by_case_mix']
             
-            if isinstance(bottlenecks, list) and bottlenecks:
-                cc_data = [['Chief Complaint', 'Bed-Hours', 'Avg LOS (hrs)', 'Transfer Rate']]
-                for item in bottlenecks[:10]:  # Top 10
+            if isinstance(bed_occupancy_analysis_by_case_mix, list) and bed_occupancy_analysis_by_case_mix:
+                cc_data = [['Case Mix', 'Bed-Hours', 'Avg LOS (hrs)', 'Transfer Rate']]
+                for item in bed_occupancy_analysis_by_case_mix[:10]:  # Top 10
                     cc_data.append([
                         item.get('label', 'N/A').replace('_', ' '),
                         str(item.get('value', 0)),
@@ -202,7 +202,7 @@ def generate_pdf_report(background_tasks: BackgroundTasks):
         Based on the analysis of ED operations:
         
         1. Monitor high-volume time periods identified in the temporal heatmap
-        2. Address chief complaint bottlenecks with targeted resource allocation
+        2. Address case-mix bed occupancy bottlenecks with targeted resource allocation
         3. Review disposition patterns for optimization opportunities
         4. Consider staffing adjustments based on peak volume periods
         5. Implement process improvements for identified bottlenecks
