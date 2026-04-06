@@ -173,7 +173,8 @@ CREATE TABLE `temporal_summary` (
 DROP TABLE IF EXISTS `thresholds`;
 CREATE TABLE `thresholds` (
   `threshold_id` int NOT NULL AUTO_INCREMENT,
-  `threshold_name` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `stage` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `threshold_type` varchar(250) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `threshold_value` int NOT NULL,
   PRIMARY KEY (`threshold_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
