@@ -228,7 +228,7 @@ const ViewMetrics = () => {
           //   trend: 0
           // };
           return {
-            value: foundMetric?.avg_value != null ? Number(foundMetric.avg_value).toFixed(1) : "--",
+            value: foundMetric?.avg_value != null ? Number(foundMetric.avg_value).toFixed(0) : "--",
             direction: foundMetric?.direction ?? "stable",
             trend: foundMetric?.trend ?? 0
           };
@@ -242,8 +242,8 @@ const ViewMetrics = () => {
             const diff = averageStay != null ? value - Number(averageStay) : null;
             return {
               name: `Level ${level}`,
-              avg: `${value.toFixed(1)}m`,
-              diff: diff == null ? "--" : `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}m`,
+              avg: `${value.toFixed(0)}m`,
+              diff: diff == null ? "--" : `${diff >= 0 ? "+" : ""}${diff.toFixed(0)}m`,
               type: diff != null && diff <= 0 ? "good" : "warning",
               color: colorScale[idx % colorScale.length]
             };
@@ -257,8 +257,8 @@ const ViewMetrics = () => {
             const diff = averageStay != null ? value - Number(averageStay) : null;
             return {
               name: `Level ${level}`,
-              avg: `${value.toFixed(1)}m`,
-              diff: diff == null ? "--" : `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}m`,
+              avg: `${value.toFixed(0)}m`,
+              diff: diff == null ? "--" : `${diff >= 0 ? "+" : ""}${diff.toFixed(0)}m`,
               type: diff != null && diff <= 0 ? "good" : "warning",
               color: colorScale[idx % colorScale.length]
             };
@@ -277,7 +277,7 @@ const ViewMetrics = () => {
             //   trend: 0
             // },
               avg_stay: {
-                value: averageStay != null ? Number(averageStay).toFixed(1) : "--",
+                value: averageStay != null ? Number(averageStay).toFixed(0) : "--",
                 direction: metricByName.total_ed_stay_time?.direction ?? "stable",
                 trend: metricByName.total_ed_stay_time?.trend ?? 0
               },
@@ -370,7 +370,7 @@ const ViewMetrics = () => {
             <div className="card_body_mini">
               <span className="stat_value_large">
                 {dashboardData?.summary.avg_stay.value ?? '--'}
-                <small className="stat_unit">m</small>
+                <small className="stat_unit">min</small>
               </span>
               <span className={`trend_indicator ${getTrendClass(dashboardData?.summary.avg_stay.direction)}`}>
                 {getTrendIcon(dashboardData?.summary.avg_stay.direction)} {dashboardData?.summary.avg_stay.trend}% {/* change unit to % from minutes since these are percentile metrics */}
@@ -395,7 +395,7 @@ const ViewMetrics = () => {
                 <div className="card_body_mini">
                   <span className="stat_value_large">
                     {data?.value ?? '--'}
-                    <small className="stat_unit">m</small> {/* change unit to % from minutes since these are percentile metrics */}
+                    <small className="stat_unit">min</small> {/* change unit to % from minutes since these are percentile metrics */}
                   </span>
                   <span className={`trend_indicator ${getTrendClass(data?.direction)}`}>
                     {getTrendIcon(data?.direction)} {data?.trend}% {/* change unit to % from minutes since these are percentile metrics */}

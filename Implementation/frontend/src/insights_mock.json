@@ -253,17 +253,24 @@
     { "group": "PORTUGUESE", "variance": -4 },
     { "group": "WHITE - OTHER EUROPEAN", "variance":10 }
   ],
-  "efficiency_stress_test": [
-    { "volume": 12, "p90_wait": 35 }, 
-    { "volume": 18, "p90_wait": 42 },
-    { "volume": 25, "p90_wait": 50 }, 
-    { "volume": 32, "p90_wait": 65 },
-    { "volume": 38, "p90_wait": 85 }, 
-    { "volume": 42, "p90_wait": 110 },
-    { "volume": 45, "p90_wait": 185 }, 
-    { "volume": 48, "p90_wait": 210 },
-    { "volume": 55, "p90_wait": 240 }, 
-    { "volume": 62, "p90_wait": 275 }
+  "bed_occupancy_analysis_by_case_mix": [
+    { "label": "Abdominal_Pain", "value": 124.5, "avg_los": 6.2, "count": 20, "transfer_count": 2, "transfer_pct": 10.0 },
+    { "label": "Chest_Pain", "value": 118.0, "avg_los": 5.9, "count": 20, "transfer_count": 1, "transfer_pct": 5.0 },
+    { "label": "Shortness_of_Breath", "value": 109.2, "avg_los": 7.8, "count": 14, "transfer_count": 3, "transfer_pct": 21.4 },
+    { "label": "Back_Pain", "value": 88.4, "avg_los": 5.2, "count": 17, "transfer_count": 0, "transfer_pct": 0.0 },
+    { "label": "ETOH_Mental_Health", "value": 80.0, "avg_los": 8.0, "count": 10, "transfer_count": 2, "transfer_pct": 20.0 }
+  ],
+  "p90_total_ed_stay_time_volume_correlations": [
+    { "patient_volume": 12, "p90_total_ed_stay_time": 35 },
+    { "patient_volume": 18, "p90_total_ed_stay_time": 42 },
+    { "patient_volume": 25, "p90_total_ed_stay_time": 50 },
+    { "patient_volume": 32, "p90_total_ed_stay_time": 65 },
+    { "patient_volume": 38, "p90_total_ed_stay_time": 85 },
+    { "patient_volume": 42, "p90_total_ed_stay_time": 110 },
+    { "patient_volume": 45, "p90_total_ed_stay_time": 185 },
+    { "patient_volume": 48, "p90_total_ed_stay_time": 210 },
+    { "patient_volume": 55, "p90_total_ed_stay_time": 240 },
+    { "patient_volume": 62, "p90_total_ed_stay_time": 275 }
   ],
   "disposition_chart": [
     { "disposition": "admitted", "time_to_triage": 155, "time_to_vital": 135, "time_to_medrecon": 129, "time_to_dispen": 120, "time_to_discharge": 124, "avg_total_ed_stay_time": 650 },

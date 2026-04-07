@@ -185,6 +185,8 @@ useEffect(() => {
         bottlenecksRes,
         bottleneckStatusRes,
         volumeEfficiencyRes,
+        bedOccupancyAnalysisByCaseMixRes,
+        p90TotalEdStayTimeVolumeCorrelationsRes,
         dispositionsRes,
         acuityRes,
         temporalHeatmapRes,
@@ -197,13 +199,14 @@ useEffect(() => {
         fetch('http://localhost:8000/insights/demographics_audit', {
           signal: controller.signal
         }),
-        fetch('http://localhost:8000/insights/chief_complaint_bottlenecks', {
+        fetch('http://localhost:8000/insights/bed-occupancy-analysis-by-case-mix', {
           signal: controller.signal
         }),
         fetch('http://localhost:8000/metrics/bottleneck-analysis', {
           signal: controller.signal
         }),
         fetch('http://localhost:8000/insights/volume-efficiency-correlation', {
+        fetch('http://localhost:8000/insights/p90-total-ed-stay-time-volume-correlations', {
           signal: controller.signal
         }),
         fetch('http://localhost:8000/insights/disposition_milestone_analysis', {
@@ -224,8 +227,16 @@ useEffect(() => {
       ]);
       if (!logisticsRes.ok) throw new Error(`Logistics Error: ${logisticsRes.status}`);
       if (!demographicsRes.ok) throw new Error(`Demographics Error: ${demographicsRes.status}`);
-      if (!bottlenecksRes.ok) throw new Error(`Chief Complaint Bottlenecks Error: ${bottlenecksRes.status}`);
-      if (!volumeEfficiencyRes.ok) throw new Error(`Volume-Efficiency Correlation Error: ${volumeEfficiencyRes.status}`);
+      if (!bedOccupancyAnalysisByCaseMixRes.ok) {
+        throw new Error(
+          `Bed Occupancy Analysis by Case Mix Error: ${bedOccupancyAnalysisByCaseMixRes.status}`
+        );
+      }
+      if (!p90TotalEdStayTimeVolumeCorrelationsRes.ok) {
+        throw new Error(
+          `P90 Total ED Stay Time vs. Patient Volume Correlations Error: ${p90TotalEdStayTimeVolumeCorrelationsRes.status}`
+        );
+      }
       if (!dispositionsRes.ok) throw new Error(`Disposition Comparison Error: ${dispositionsRes.status}`);
       if (!acuityRes.ok) throw new Error(`Acuity Level Analysis Error: ${acuityRes.status}`);
       if (!stageTemporalRes.ok) throw new Error(`Stage Temporal Forecast Error: ${stageTemporalRes.status}`);
@@ -238,6 +249,9 @@ useEffect(() => {
         ? await bottleneckStatusRes.json()
         : (mockData.bottleneck_analysis || { overall_status: 'No Data', banner_message: 'No bottleneck data available.', stages: [] });
       const volumeEfficiencyPayload = await volumeEfficiencyRes.json();
+      const bedOccupancyAnalysisByCaseMixPayload = await bedOccupancyAnalysisByCaseMixRes.json();
+      const p90TotalEdStayTimeVolumeCorrelationsPayload =
+        await p90TotalEdStayTimeVolumeCorrelationsRes.json();
       const dispositionsPayload = await dispositionsRes.json();
       const acuityPayload = await acuityRes.json();
       const temporalHeatmapPayload = await temporalHeatmapRes.json();
@@ -253,9 +267,11 @@ useEffect(() => {
           top_chief_complaints: logisticsPayload.logistics_root_cause.top_chief_complaints || []
         },
         equity_audit: demographicsPayload.equity_audit || [],
-        chief_complaint_bottlenecks: bottlenecksPayload.chief_complaint_bottlenecks || [],
+        bed_occupancy_analysis_by_case_mix:
+          bedOccupancyAnalysisByCaseMixPayload.bed_occupancy_analysis_by_case_mix || [],
         bottleneck_analysis: bottleneckStatusPayload || null,
-        efficiency_stress_test: volumeEfficiencyPayload.correlation_chart || [],
+        p90_total_ed_stay_time_volume_correlations:
+          p90TotalEdStayTimeVolumeCorrelationsPayload.p90_total_ed_stay_time_volume_correlations || [],
         disposition_chart: dispositionsPayload.disposition_milestone_analysis || [],
         acuity_chart: acuityPayload.acuity_level_analysis || [],
         stage_temporal_forecast: stageTemporalPayload || null,
@@ -277,10 +293,10 @@ useEffect(() => {
   return () => controller.abort(); // Cleanup
 }, []);
 
-  const correlationPoints = (insightsData?.efficiency_stress_test || [])
+  const correlationPoints = (insightsData?.p90_total_ed_stay_time_volume_correlations || [])
     .map((item) => ({
       x: Number(item.patient_volume),
-      y: Number(item.p90_wait_time),
+      y: Number(item.p90_total_ed_stay_time),
     }))
     .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
 
@@ -625,7 +641,7 @@ useEffect(() => {
         <section className="insight_block logistics_root_cause">
           <h3>Patient Flow Analysis</h3>
           {/* Plotly Bar/Sankey Chart */}
-          <div className="logistics_grid_container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="logistics_grid_container" style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }}>
           
        {/* Part A: Disposition Pie Chart */}
     <div className="chart_wrapper">
@@ -640,7 +656,7 @@ useEffect(() => {
           textinfo: 'label+percent'
         }]}
         layout={{ 
-          height: 320, 
+          height: 240, 
           margin: { t: 10, b: 10, l: 10, r: 10 },
           showlegend: false,
           annotations: dispositionTotalCount !== null ? [{
@@ -660,18 +676,18 @@ useEffect(() => {
       />
     </div>
 
-    {/* Part B: Chief Complaint Bottleneck Bar Chart */}
+    {/* Part B: Bed Occupancy Analysis Bar Chart */}
     <div className="chart_wrapper">
       <h4>Bed Occupancy Analysis by Case Mix</h4>
       <Plot
         data={[{
-          x: insightsData?.chief_complaint_bottlenecks?.map(c => c.value) || [],
-          y: insightsData?.chief_complaint_bottlenecks?.map(c => c.label.replaceAll('_', ' ')) || [],
+          x: insightsData?.bed_occupancy_analysis_by_case_mix?.map(c => c.value) || [],
+          y: insightsData?.bed_occupancy_analysis_by_case_mix?.map(c => c.label.replaceAll('_', ' ')) || [],
           type: 'bar',
           orientation: 'h',
           marker: { color: '#6366f1' },
-          text: insightsData?.chief_complaint_bottlenecks?.map(c => `${c.count} patients`) || [],
-          customdata: insightsData?.chief_complaint_bottlenecks?.map(c => [c.avg_los, c.transfer_pct]) || [],
+          text: insightsData?.bed_occupancy_analysis_by_case_mix?.map(c => `${c.count} patients`) || [],
+          customdata: insightsData?.bed_occupancy_analysis_by_case_mix?.map(c => [c.avg_los, c.transfer_pct]) || [],
           hovertemplate:
             'Category: %{y}<br>' +
             'Total bed-hours: %{x}<br>' +
@@ -680,7 +696,7 @@ useEffect(() => {
             'Transfer rate: %{customdata[1]}%<extra></extra>',
         }]}
         layout={{
-          height: 320,
+          height: 400,
           margin: { t: 20, b: 40, l: 140, r: 20 },
           xaxis: { title: { text: 'Total Bed-Hours', standoff: 20 } },
           yaxis: { autorange: 'reversed' },

@@ -935,7 +935,7 @@ def get_equity_audit(upload_id: int) -> list[dict]:
 
     return equity_audit
 
-def get_chief_complaint_bottleneck_insights(upload_id: int):
+def get_bed_occupancy_analysis_by_case_mix(upload_id: int):
     query = text("""
         SELECT
             e.stay_id,
@@ -957,59 +957,84 @@ def get_chief_complaint_bottleneck_insights(upload_id: int):
         return []
 
     draft_operational_keywords = {
-        "Long_Stay_Boarders": [
-            "alcohol intoxication", "altered mental status", "mental status",
-            "psych", "si", "detox", "behavioral", "depression", "clearance",
-        ],
-        "High_Nursing_Intensity": [
-            "chest pain", "dyspnea", "shortness of breath",
+        "Gen_Health_Symptoms": [
             "tachycardia", "hypotension", "palpitations", "allergic reaction",
+            "ear pain", "rash",
+            "dental pain", "tooth pain", 
+            "weakness", "htn", "weight loss dehydration",
+            "cellulitis", "abscess", "wound infection", "skin infection",
+            "dysuria", "uti", "urinary frequency", "hematuria",
+            "anorexia", "epistaxis", "r eye pain visual changes",
+            "body aches", "lightheaded",  "allergic rxn",
+            "visual changes", "hypoxia", "epigatric pain ercp",
+            "dizzy nausea", "weak", "hemoptysis", "hypertension", 
+    
         ],
-        "Trauma_MVC_or_Injury": [
+        "Fever": [
+            "influenza like illness", "ili", "viral syndrome", "flu like illness", 
+            "sore throat", "fever", "febrile", "chills",  "fever", "cough","fevers",
+            "throat foreign body sensation", "pneumonia transfer", "sepsis",
+        ],
+        "Injury": [
             "mvc", "motor vehicle crash", "motor vehicle collision",
-            "status post fall", "fall", "injury",
+            "status post fall", "fall", "injury", "wound eval",  "laceration",
+            "motorcycle accident", "status post assault", "head bleed", "headbleed",
+            "ankle inj", "gsw", "abrasion", "assault", "bicycle accident",
+            "facial laceration", "burn", "wound check",
         ],
-        "High_Imaging_Demand": [
+        "chest_pain/Sob": [ 
+            "chest pain", "dyspnea", "shortness of breath" , "sob", 
+            "respiratory distress", "respiratory failure", "asthma exacerbation",
+            "chest pains", "stemi",
+        ],
+        "Abdominal/Pelvic_Pain": [
             "abdominal pain", "flank pain", "quadrant abdominal pain",
             "lower abdominal pain", "right lower quadrant",
             "left lower quadrant", "right upper quadrant",
-            "upper quadrant abdominal",
+            "upper quadrant abdominal", "inguinal pain",
+            "acute pelvic pain", "pelvic pain", "groin pain",
+            "rectal pain", "epigastric pain", "v d n",
         ],
-        "Neuro_or_Syncope": [
-            "headache", "syncope", "seizure", "stroke",
-            "dizziness", "numbness", "weakness",
-        ],
-        "MSK_Back_or_Extremity_Pain": [
+        "Back/Extremity_Pain": [
             "back pain", "lower back pain", "neck pain", "shoulder pain",
             "leg pain", "arm pain", "hip pain", "knee pain",
             "ankle pain", "finger pain", "hand pain", "wrist pain",
-            "foot pain", "toe pain",
+            "foot pain", "toe pain", "l sided rib pain", "r sided rib pain",
+            "lower extremity pain", "upper extremity pain",
         ],
-        "GU_Urinary": [
-            "dysuria", "uti", "urinary frequency", "hematuria",
+        "Neuro": [
+            "headache", "syncope", "seizure", "stroke",
+            "dizziness", "numbness", "migraine", "dizzziness", "sah", "sah transfer", 
+            "facial droop", "slurred speech", "agitation", "basic trauma", 
+            "vertigo", "double vision", "seizures",
         ],
-        "Skin_Soft_Tissue": [
-            "cellulitis", "abscess", "wound infection", "skin infection",
-        ],
-        "GI_Bleeding": [
+        "Psychiatric": [
+            "altered mental status", "mental status",
+            "psych", "si", "behavioral", "depression", "clearance", 
+            "anxiety", "hallucination", "paranoid", "hallucinations", 
+            "requests eval bizarre behaviour", "panic attack", "hearing voices",
+            "confusion", "psychiatric hold", 
+
+        ],   
+        "GI_Symptoms": [
             "bright red blood per rectum", "brbpr", "gi bleed",
-            "rectal bleed", "bloody stool", "melena",
+            "rectal bleed", "bloody stool", "melena", 
+            "sbo", "n v", "n v d", "constipation", "nausea vomitting",
+            "abdominal distention", "diarrhea", "vomiting",
+            "difficulty swallowing", "hematemesis", 
         ],
-        "Viral_Respiratory_ILI": [
-            "influenza like illness", "ili", "viral syndrome", "flu like illness",
+        "Alcohol/Sub_Use": [
+            "alcohol intoxication", "etoh intoxication", "drug intoxication",
+            "substance misuse intoxication","heroin od", "substance use",
+            "drug overdose", "overdose", "etoh withdrawal", "alcohol withdrawal",
         ],
-        "Quick_Turnaround": [
-            "sore throat", "wound eval", "ear pain", "rash",
-            "dental pain", "tooth pain", "laceration", "refill",
-        ],
-        "Workup_Required": [
-            "abnormal labs", "fever", "cough", "n v", "n v d",
-        ],
-        "Evaluation_or_Followup": [
-            "for eval", "re eval", "recheck", "follow up",
-        ],
-        "Abnormal_Test_or_Outside_Result": [
+       
+        "Eval/FU/Abn_Tests": [
+            "for eval", "re eval", "recheck", "follow up","refill", "abnormal labs",
             "abnormal mri", "abnormal ct", "abnormal xray", "abnormal ultrasound",
+            "suture removal", "needs ct scan", "gtube eval", "blocked ngt",
+            "ng tube eval", "medical device problem", "hyperglycemia",
+            "abnormal lab values",
         ],
     }
 
@@ -1064,6 +1089,17 @@ def get_chief_complaint_bottleneck_insights(upload_id: int):
     df["op_group"] = df["chiefcomplaint"].apply(map_to_op_group)
     df["is_transfer"] = df["chiefcomplaint"].apply(has_transfer_flag)
 
+    other_misc_counts = (
+    df.loc[df["op_group"] == "Other/Misc", "chiefcomplaint_clean"]
+    .value_counts()
+    .sort_values(ascending=False)
+)
+    if not other_misc_counts.empty:
+        print(f"Reached bottleneck function for upload_id={upload_id}", flush=True)
+        print(other_misc_counts.to_string(), flush=True)
+
+
+
     stats = (
         df.groupby("op_group")
         .agg(
@@ -1098,8 +1134,8 @@ def get_chief_complaint_bottleneck_insights(upload_id: int):
         for _, row in stats.iterrows()
     ]
 
-# Volume vs Efficiency correlation scatter plot visualization
-def get_volume_efficiency_correlation():
+# P90 total ED stay time vs patient volume correlation scatter plot visualization
+def get_p90_total_ed_stay_time_volume_correlations():
     sql = text("""
         SELECT
             u.upload_id,
@@ -1119,11 +1155,11 @@ def get_volume_efficiency_correlation():
         rows = conn.execute(sql).mappings().all()
 
     return {
-        "correlation_chart": [
+        "p90_total_ed_stay_time_volume_correlations": [
             {
                 "upload_id": row["upload_id"],
                 "patient_volume": int(row["patient_volume"]),
-                "p90_wait_time": float(row["p90_value"])
+                "p90_total_ed_stay_time": float(row["p90_value"])
             }
             for row in rows
         ]
