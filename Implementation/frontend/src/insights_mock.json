@@ -171,6 +171,52 @@
       }
     ]
   },
+  "bottleneck_analysis": {
+    "overall_status": "Bottleneck",
+    "banner_message": "Bottleneck detected in 2 stages. Additional 1 stage needs improvement.",
+    "stages": [
+      {
+        "stage": "time_to_vital",
+        "status": "Bottleneck",
+        "stage_total": 92,
+        "bottleneck_count": 14,
+        "bottleneck_rate": 0.1522,
+        "needs_improvement_count": 9,
+        "needs_improvement_rate": 0.0978,
+        "normal_count": 69
+      },
+      {
+        "stage": "time_to_medrecon",
+        "status": "Bottleneck",
+        "stage_total": 92,
+        "bottleneck_count": 12,
+        "bottleneck_rate": 0.1304,
+        "needs_improvement_count": 11,
+        "needs_improvement_rate": 0.1196,
+        "normal_count": 69
+      },
+      {
+        "stage": "time_to_discharge",
+        "status": "Needs Improvement",
+        "stage_total": 92,
+        "bottleneck_count": 5,
+        "bottleneck_rate": 0.0543,
+        "needs_improvement_count": 18,
+        "needs_improvement_rate": 0.1957,
+        "normal_count": 69
+      },
+      {
+        "stage": "time_to_triage",
+        "status": "Normal",
+        "stage_total": 92,
+        "bottleneck_count": 3,
+        "bottleneck_rate": 0.0326,
+        "needs_improvement_count": 8,
+        "needs_improvement_rate": 0.087,
+        "normal_count": 81
+      }
+    ]
+  },
   "heatmap_data": {
     "y_days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
     "x_hours": ["12am", "3am", "6am", "9am", "12pm", "3pm", "6pm", "9pm"],

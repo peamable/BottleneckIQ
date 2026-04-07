@@ -39,11 +39,37 @@
   align-items: start;
 }
 
-.risk_cards_container {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.forecast_metric_row {
+  display: flex;
   gap: 0.6rem;
-  align-content: start;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.forecast_metric_card {
+  flex: 1 1 108px;
+  min-width: 108px;
+  max-width: 128px;
+  padding: 0.5rem 0.55rem;
+}
+
+.forecast_main_grid {
+  display: grid;
+  grid-template-columns: 40% 60%;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+.forecast_chart {
+  min-width: 0;
+}
+
+.forecast_panel_column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+  max-height: 470px;
 }
 
 .risk_card {
@@ -59,6 +85,27 @@
   background: #eff6ff;
   border-color: #bfdbfe;
   border-left-color: #2E5BFF;
+}
+
+.risk_card_current {
+  background: #e0e7ff;
+  border-color: #c7d2fe;
+  border-left-color: #4f46e5;
+}
+
+.risk_card_current_day {
+  background: #ccfbf1;
+  border-color: #99f6e4;
+  border-left-color: #0f766e;
+}
+
+.risk_card_current h4,
+.risk_card_current_day h4,
+.risk_card_current .risk_metric,
+.risk_card_current_day .risk_metric,
+.risk_card_current .risk_value,
+.risk_card_current_day .risk_value {
+  color: #0f172a;
 }
 
 .risk_card_day {
@@ -77,6 +124,22 @@
   background: #f8fafc;
   border-color: #cbd5e1;
   border-left-color: #334155;
+}
+
+.risk_card_recommendations {
+  flex: 0 0 auto;
+  max-height: 260px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.risk_card_pathways {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .risk_card_wide {
@@ -157,6 +220,34 @@
   gap: 0.7rem;
 }
 
+.forecast_recommendation_list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.forecast_recommendation_section {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.forecast_recommendation_section_label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.forecast_pathway_list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
 .forecast_recommendation_item,
 .forecast_pathway_item {
   border: 1px solid #e2e8f0;
@@ -171,6 +262,10 @@
 
 .forecast_recommendation_critical {
   border-left: 4px solid #dc2626;
+}
+
+.forecast_recommendation_stable {
+  border-left: 4px solid #10b981;
 }
 
 .forecast_recommendation_header,
@@ -245,6 +340,7 @@
 }
 
 @media (max-width: 1100px) {
+  .forecast_main_grid,
   .forecast_grid {
     grid-template-columns: 1fr;
   }
@@ -253,22 +349,19 @@
     grid-template-columns: 1fr;
   }
 
-  .risk_cards_container {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .forecast_panel_column {
+    max-height: none;
   }
 
-  .risk_card_wide {
-    grid-column: 1 / -1;
+  .risk_card_pathways {
+    max-height: 420px;
   }
 }
 
 @media (max-width: 720px) {
-  .risk_cards_container {
-    grid-template-columns: 1fr;
-  }
-
-  .risk_card_wide {
-    grid-column: auto;
+  .forecast_metric_card {
+    flex-basis: 140px;
+    max-width: none;
   }
 }
 
