@@ -22,12 +22,42 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, []);
 
+  const signUp = async (email, password) => {
+    setAuthLoading(true);
+    try {
+      return await createUserWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      setAuthLoading(false);
+      throw error;
+    }
+  };
+
+  const logIn = async (email, password) => {
+    setAuthLoading(true);
+    try {
+      return await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      setAuthLoading(false);
+      throw error;
+    }
+  };
+
+  const logOut = async () => {
+    setAuthLoading(true);
+    try {
+      return await signOut(auth);
+    } catch (error) {
+      setAuthLoading(false);
+      throw error;
+    }
+  };
+
   const value = {
     user,
     authLoading,
-    signUp: (email, password) => createUserWithEmailAndPassword(auth, email, password),
-    logIn: (email, password) => signInWithEmailAndPassword(auth, email, password),
-    logOut: () => signOut(auth),
+    signUp,
+    logIn,
+    logOut,
   };
 
   return (

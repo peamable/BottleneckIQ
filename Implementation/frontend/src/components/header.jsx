@@ -39,7 +39,7 @@ const Header = ({ uploadIdFromUrl }) => {
     const handleLogout = async () => {
         try {
             await logOut();
-            navigate('/');
+            navigate('/auth', { replace: true });
         } catch (error) {
             console.error('Logout failed', error);
         }

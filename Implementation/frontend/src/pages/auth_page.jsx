@@ -23,7 +23,7 @@ const AuthPage = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const destination = location.state?.from?.pathname || '/upload';
+  const destination = '/view_metrics';
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -48,8 +48,6 @@ const AuthPage = () => {
       } else {
         await logIn(email, password);
       }
-
-      navigate(destination, { replace: true });
     } catch (err) {
       setError(errorMessages[err.code] || 'Authentication failed. Please try again.');
     } finally {
