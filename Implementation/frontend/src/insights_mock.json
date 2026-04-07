@@ -9,6 +9,21 @@
     ]
   },
   "stage_temporal_forecast": {
+    "operational_context": {
+      "ed_load": {
+        "label": "ED Load",
+        "value_label": "42 pts/hr",
+        "status": "high",
+        "detail": "Above recent hourly baseline"
+      },
+      "acuity_mix": {
+        "label": "High-Acuity Share",
+        "value_label": "38%",
+        "status": "high",
+        "detail": "Acuity 1-2 demand is likely to increase downstream pressure"
+      }
+    },
+    "escalation_threshold": 30,
     "current_context": {
       "day_label": "Monday",
       "hour_of_day": 14,
@@ -19,16 +34,48 @@
     "next_slot": { "vital": 35, "medrecon": 30, "dispen": 29, "discharge": 38 },
     "current_day_summary": { "vital": 26, "medrecon": 21, "dispen": 23, "discharge": 28 },
     "next_day_summary": { "vital": 29, "medrecon": 24, "dispen": 25, "discharge": 31 },
+    "upcoming_hours": [
+      { "forecast_offset_hours": 1, "day_of_week": 0, "day_label": "Monday", "hour_of_day": 15, "time_label": "15:00", "vital": 35, "medrecon": 30, "dispen": 29, "discharge": 38, "sample_size": 12 },
+      { "forecast_offset_hours": 2, "day_of_week": 0, "day_label": "Monday", "hour_of_day": 16, "time_label": "16:00", "vital": 33, "medrecon": 28, "dispen": 27, "discharge": 35, "sample_size": 11 },
+      { "forecast_offset_hours": 3, "day_of_week": 0, "day_label": "Monday", "hour_of_day": 17, "time_label": "17:00", "vital": 31, "medrecon": 26, "dispen": 25, "discharge": 33, "sample_size": 11 },
+      { "forecast_offset_hours": 4, "day_of_week": 0, "day_label": "Monday", "hour_of_day": 18, "time_label": "18:00", "vital": 32, "medrecon": 27, "dispen": 28, "discharge": 34, "sample_size": 10 }
+    ],
+    "upcoming_days": [
+      { "forecast_offset_days": 1, "day_of_week": 1, "day_label": "Tuesday", "vital": 29, "medrecon": 24, "dispen": 25, "discharge": 31, "sample_size": 62 },
+      { "forecast_offset_days": 2, "day_of_week": 2, "day_label": "Wednesday", "vital": 27, "medrecon": 22, "dispen": 24, "discharge": 30, "sample_size": 58 },
+      { "forecast_offset_days": 3, "day_of_week": 3, "day_label": "Thursday", "vital": 25, "medrecon": 20, "dispen": 22, "discharge": 28, "sample_size": 54 },
+      { "forecast_offset_days": 4, "day_of_week": 4, "day_label": "Friday", "vital": 31, "medrecon": 26, "dispen": 27, "discharge": 34, "sample_size": 67 }
+    ],
     "alerts": [
       {
         "stage": "vital",
         "stage_label": "Vitals",
-        "recommendation": "Prepare vitals capacity before 15:00."
+        "forecast_offset_hours": 1,
+        "target_day_label": "Monday",
+        "target_time_label": "15:00",
+        "risk_now": 24,
+        "risk_next": 35,
+        "priority": "high",
+        "message": "High Vitals delay predicted for Monday 15:00.",
+        "recommendation": "Open a rapid assessment lane and pull vitals forward before arrivals queue.",
+        "staffing_advisory": "Shift flex support from Dispensing to Vitals for the 15:00 window.",
+        "support_stage": "dispen",
+        "support_stage_label": "Dispensing"
       },
       {
         "stage": "discharge",
         "stage_label": "Discharge",
-        "recommendation": "Prepare discharge capacity before 15:00."
+        "forecast_offset_hours": 1,
+        "target_day_label": "Monday",
+        "target_time_label": "15:00",
+        "risk_now": 26,
+        "risk_next": 38,
+        "priority": "high",
+        "message": "High Discharge delay predicted for Monday 15:00.",
+        "recommendation": "Prioritize discharge paperwork and bed turnaround coordination before capacity tightens.",
+        "staffing_advisory": "Shift flex support from Med Recon to Discharge for the 15:00 window.",
+        "support_stage": "medrecon",
+        "support_stage_label": "Med Recon"
       }
     ],
     "today_hourly_risk": [
@@ -65,19 +112,108 @@
         "event_flow": "1 -> 2 -> 3 -> 4 -> 5 -> 6",
         "event_flow_label": "entry -> triage -> vital -> medrecon -> dispen -> discharge",
         "avg_los_min": 312.5,
-        "share_pct": 34.2
+        "share_pct": 34.2,
+        "share_label": "34.2%",
+        "stay_count": 88,
+        "high_acuity_pct": 41.0,
+        "primary_stage": "medrecon",
+        "primary_stage_label": "Med Recon",
+        "primary_driver": "Acuity 1/2 Surge",
+        "pathway_steps": [
+          { "key": "entry", "label": "Entry", "is_primary": false },
+          { "key": "triage", "label": "Triage", "is_primary": false },
+          { "key": "vital", "label": "Vitals", "is_primary": false },
+          { "key": "medrecon", "label": "Med Recon", "is_primary": true },
+          { "key": "dispen", "label": "Dispensing", "is_primary": false },
+          { "key": "discharge", "label": "Discharge", "is_primary": false }
+        ],
+        "recommendation": "Pre-stage support around med recon during peak windows"
       },
       {
         "event_flow": "1 -> 2 -> 3 -> 5 -> 6",
         "event_flow_label": "entry -> triage -> vital -> dispen -> discharge",
         "avg_los_min": 287.9,
-        "share_pct": 18.7
+        "share_pct": 18.7,
+        "share_label": "18.7%",
+        "stay_count": 48,
+        "high_acuity_pct": 22.0,
+        "primary_stage": "dispen",
+        "primary_stage_label": "Dispensing",
+        "primary_driver": "Medication Queue",
+        "pathway_steps": [
+          { "key": "entry", "label": "Entry", "is_primary": false },
+          { "key": "triage", "label": "Triage", "is_primary": false },
+          { "key": "vital", "label": "Vitals", "is_primary": false },
+          { "key": "dispen", "label": "Dispensing", "is_primary": true },
+          { "key": "discharge", "label": "Discharge", "is_primary": false }
+        ],
+        "recommendation": "Pre-stage support around dispensing during peak windows"
       },
       {
         "event_flow": "1 -> 2 -> 4 -> 5 -> 6",
         "event_flow_label": "entry -> triage -> medrecon -> dispen -> discharge",
         "avg_los_min": 265.1,
-        "share_pct": 14.9
+        "share_pct": 14.9,
+        "share_label": "14.9%",
+        "stay_count": 38,
+        "high_acuity_pct": 16.0,
+        "primary_stage": "discharge",
+        "primary_stage_label": "Discharge",
+        "primary_driver": "Discharge Backlog",
+        "pathway_steps": [
+          { "key": "entry", "label": "Entry", "is_primary": false },
+          { "key": "triage", "label": "Triage", "is_primary": false },
+          { "key": "medrecon", "label": "Med Recon", "is_primary": false },
+          { "key": "dispen", "label": "Dispensing", "is_primary": false },
+          { "key": "discharge", "label": "Discharge", "is_primary": true }
+        ],
+        "recommendation": "Pre-stage support around discharge during peak windows"
+      }
+    ]
+  },
+  "bottleneck_analysis": {
+    "overall_status": "Bottleneck",
+    "banner_message": "Bottleneck detected in 2 stages. Additional 1 stage needs improvement.",
+    "stages": [
+      {
+        "stage": "time_to_vital",
+        "status": "Bottleneck",
+        "stage_total": 92,
+        "bottleneck_count": 14,
+        "bottleneck_rate": 0.1522,
+        "needs_improvement_count": 9,
+        "needs_improvement_rate": 0.0978,
+        "normal_count": 69
+      },
+      {
+        "stage": "time_to_medrecon",
+        "status": "Bottleneck",
+        "stage_total": 92,
+        "bottleneck_count": 12,
+        "bottleneck_rate": 0.1304,
+        "needs_improvement_count": 11,
+        "needs_improvement_rate": 0.1196,
+        "normal_count": 69
+      },
+      {
+        "stage": "time_to_discharge",
+        "status": "Needs Improvement",
+        "stage_total": 92,
+        "bottleneck_count": 5,
+        "bottleneck_rate": 0.0543,
+        "needs_improvement_count": 18,
+        "needs_improvement_rate": 0.1957,
+        "normal_count": 69
+      },
+      {
+        "stage": "time_to_triage",
+        "status": "Normal",
+        "stage_total": 92,
+        "bottleneck_count": 3,
+        "bottleneck_rate": 0.0326,
+        "needs_improvement_count": 8,
+        "needs_improvement_rate": 0.087,
+        "normal_count": 81
       }
     ]
   },

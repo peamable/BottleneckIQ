@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Plot from 'react-plotly.js'; // You'll need to install this
+import { useNavigate } from 'react-router-dom';
 import BottleneckBanner from '../components/bottleneck_banner';
 import '../insights.css';
 import mockData from "../insights_mock.json";
@@ -7,6 +8,110 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, Legend, ReferenceLine 
 } from 'recharts';
+
+const stageOpsGuide = {
+  time_to_triage: {
+    label: 'Triage',
+    action: 'Open rapid intake coverage and route low-acuity arrivals to fast-track screening.',
+    staffing: 'Reassign an experienced triage RN or intake nurse during the surge window.',
+  },
+  time_to_vital: {
+    label: 'Vitals',
+    action: 'Move vitals capture closer to intake and pre-stage equipment in high-turn bays.',
+    staffing: 'Float a tech or support RN to front-door vitals collection.',
+  },
+  time_to_medrecon: {
+    label: 'Med Recon',
+    action: 'Prioritize discharge reconciliations and clear pending pharmacy-dependent cases first.',
+    staffing: 'Coordinate with pharmacy lead or assign a discharge-focused clinician to reconciliation tasks.',
+  },
+  time_to_dispen: {
+    label: 'Dispensing',
+    action: 'Pre-stage common discharge medications and batch dispense-ready patients before peak release times.',
+    staffing: 'Shift pharmacy runner or discharge support toward medication handoff workload.',
+  },
+  time_to_discharge: {
+    label: 'Discharge',
+    action: 'Start discharge paperwork earlier and escalate bed-turnover coordination with the charge nurse.',
+    staffing: 'Pull support from low-friction downstream work to discharge completion and transport coordination.',
+  },
+};
+
+function buildBottleneckRecommendations(summary) {
+  const stages = summary?.stages ?? [];
+  if (!stages.length) {
+    return [];
+  }
+
+  const bottleneckStages = stages.filter((stage) => stage.status === 'Bottleneck');
+  const needsStages = stages.filter((stage) => stage.status === 'Needs Improvement');
+
+  if (!bottleneckStages.length && !needsStages.length) {
+    return [{
+      id: 'ops-normal',
+      stageKey: 'all',
+      priority: 'stable',
+      title: 'Operational flow stable',
+      badge: 'All monitored stages normal',
+      message: 'No stage is currently flagged as a bottleneck or needs-improvement concern.',
+      action: 'Maintain current staffing pattern and keep discharge prep moving to preserve flow.',
+      staffing: 'No immediate staffing rebalance required.',
+    }];
+  }
+
+  const recommendations = [];
+
+  if (bottleneckStages.length > 1) {
+    recommendations.push({
+      id: 'ops-multi-stage',
+      stageKey: 'multi',
+      priority: 'critical',
+      title: 'Multi-stage bottleneck response',
+      badge: `${bottleneckStages.length} stages in bottleneck`,
+      message: 'Delays are stacking across multiple stages, which increases boarding and downstream congestion risk.',
+      action: 'Run a charge-nurse huddle now and sequence work toward the most discharge-enabling patients first.',
+      staffing: 'Temporarily rebalance staff away from normal stages toward the flagged stages below.',
+    });
+  }
+
+  bottleneckStages.forEach((stage) => {
+    const guide = stageOpsGuide[stage.stage] || {
+      label: stage.stage,
+      action: 'Escalate this stage for immediate flow review.',
+      staffing: 'Rebalance support toward this stage until the queue stabilizes.',
+    };
+    recommendations.push({
+      id: `ops-bottleneck-${stage.stage}`,
+      stageKey: stage.stage,
+      priority: 'critical',
+      title: `${guide.label} bottleneck detected`,
+      badge: `${Math.round((stage.bottleneck_rate || 0) * 100)}% bottleneck rate`,
+      message: `${stage.bottleneck_count || 0} of ${stage.stage_total || 0} monitored encounters breached the bottleneck threshold.`,
+      action: guide.action,
+      staffing: guide.staffing,
+    });
+  });
+
+  needsStages.forEach((stage) => {
+    const guide = stageOpsGuide[stage.stage] || {
+      label: stage.stage,
+      action: 'Review process drift at this stage before it becomes a sustained queue.',
+      staffing: 'Keep flex coverage available if the stage continues to slow.',
+    };
+    recommendations.push({
+      id: `ops-needs-${stage.stage}`,
+      stageKey: stage.stage,
+      priority: 'high',
+      title: `${guide.label} needs improvement`,
+      badge: `${Math.round((stage.needs_improvement_rate || 0) * 100)}% needs-improvement rate`,
+      message: `${stage.needs_improvement_count || 0} of ${stage.stage_total || 0} monitored encounters are drifting above the warning threshold.`,
+      action: guide.action,
+      staffing: guide.staffing,
+    });
+  });
+
+  return recommendations;
+}
 
 function getAxisRange(values, { minPad = 5, padRatio = 0.1 } = {}) {
   const numericValues = values.filter((value) => Number.isFinite(value));
@@ -60,6 +165,7 @@ function buildTrendLine(points) {
 }
 
 const InsightsPage = () => {
+  const navigate = useNavigate();
   const [insightsData, setInsightsData] = useState(null);
   const [heatmapData, setHeatmapData] = useState(null);
   const [error, setError] = useState(null);
@@ -79,6 +185,7 @@ useEffect(() => {
         logisticsRes,
         demographicsRes,
         bedOccupancyAnalysisByCaseMixRes,
+        bottleneckStatusRes,
         p90TotalEdStayTimeVolumeCorrelationsRes,
         dispositionsRes,
         acuityRes,
@@ -93,6 +200,9 @@ useEffect(() => {
           signal: controller.signal
         }),
         fetch('http://localhost:8000/insights/bed-occupancy-analysis-by-case-mix', {
+          signal: controller.signal
+        }),
+        fetch('http://localhost:8000/metrics/bottleneck-analysis', {
           signal: controller.signal
         }),
         fetch('http://localhost:8000/insights/p90-total-ed-stay-time-volume-correlations', {
@@ -133,6 +243,9 @@ useEffect(() => {
 
       const logisticsPayload = await logisticsRes.json();
       const demographicsPayload = await demographicsRes.json();
+      const bottleneckStatusPayload = bottleneckStatusRes.ok
+        ? await bottleneckStatusRes.json()
+        : (mockData.bottleneck_analysis || { overall_status: 'No Data', banner_message: 'No bottleneck data available.', stages: [] });
       const bedOccupancyAnalysisByCaseMixPayload = await bedOccupancyAnalysisByCaseMixRes.json();
       const p90TotalEdStayTimeVolumeCorrelationsPayload =
         await p90TotalEdStayTimeVolumeCorrelationsRes.json();
@@ -153,6 +266,7 @@ useEffect(() => {
         equity_audit: demographicsPayload.equity_audit || [],
         bed_occupancy_analysis_by_case_mix:
           bedOccupancyAnalysisByCaseMixPayload.bed_occupancy_analysis_by_case_mix || [],
+        bottleneck_analysis: bottleneckStatusPayload || null,
         p90_total_ed_stay_time_volume_correlations:
           p90TotalEdStayTimeVolumeCorrelationsPayload.p90_total_ed_stay_time_volume_correlations || [],
         disposition_chart: dispositionsPayload.disposition_milestone_analysis || [],
@@ -211,14 +325,35 @@ useEffect(() => {
 
   const stageForecast = insightsData?.stage_temporal_forecast || null;
   const eventFlowForecast = insightsData?.event_flow_forecast || null;
+  const bottleneckAnalysis = insightsData?.bottleneck_analysis || null;
   const stageHourlyRisk = stageForecast?.today_hourly_risk || [];
   const contextNow = stageForecast?.current_context || null;
   const currentSlot = stageForecast?.current_slot || null;
-  const nextSlot = stageForecast?.next_slot || null;
   const currentDaySummary = stageForecast?.current_day_summary || null;
-  const nextDaySummary = stageForecast?.next_day_summary || null;
+  const operationalContext = stageForecast?.operational_context || {};
+  const escalationThreshold = Number(stageForecast?.escalation_threshold ?? 30);
+  const upcomingHours = stageForecast?.upcoming_hours || [];
+  const upcomingDays = stageForecast?.upcoming_days || [];
   const stageAlerts = stageForecast?.alerts || [];
   const topFlowRisks = eventFlowForecast?.top_delay_flows || [];
+  const contextBadges = Object.values(operationalContext).filter(Boolean);
+  const stageStatusRecommendations = buildBottleneckRecommendations(bottleneckAnalysis);
+  const stageHourValues = stageHourlyRisk.map((slot, index) => {
+    const hourValue = Number(slot?.hour_of_day);
+    return Number.isFinite(hourValue) ? hourValue : index;
+  });
+  const stageHourTickText = stageHourValues.map((hour) => `${String(hour).padStart(2, '0')}:00`);
+  const forecastRecommendations = stageAlerts.map((alert) => ({
+    id: `forecast-${alert.stage}`,
+    stageKey: `time_to_${alert.stage}`,
+    priority: alert.priority || 'high',
+    title: `${alert.stage_label} forecast watch`,
+    badge: `${alert.target_day_label} ${alert.target_time_label}`,
+    message: alert.message,
+    action: alert.recommendation,
+    staffing: alert.staffing_advisory,
+  }));
+  const hasAnyRecommendations = stageStatusRecommendations.length > 0 || forecastRecommendations.length > 0;
 
   const stageRiskOrZero = (slot, key) => Number(slot?.[key] ?? 0);
   const maxStageRisk = (slot) => Math.max(
@@ -242,6 +377,18 @@ useEffect(() => {
 
     return (
     <div className="insights_container">
+      <section className="insights_page_toolbar">
+        <div>
+          <p className="insights_page_eyebrow">Operational Intelligence</p>
+          <h2 className="insights_page_title">Insights</h2>
+        </div>
+        <button
+          className="insights_nav_button"
+          onClick={() => navigate('/view_metrics')}
+        >
+          View Metrics
+        </button>
+      </section>
       {isUsingMockData ? (
         <section className="insight_block insights_status_warning">
           <p className="insights_status_message">
@@ -253,120 +400,218 @@ useEffect(() => {
       {/* SECTION 1: THE FORECAST HUB */}
       <section className="insight_block forecast_hub">
         <h3>Proactive Analytics & Forecasting</h3>
-        <div className="forecast_grid">
+        <div className="forecast_metric_row">
+          <div className="risk_card risk_card_current forecast_metric_card">
+            <h4>Current Hour</h4>
+            <p className="risk_metric">{contextNow ? `${contextNow.day_label} ${String(contextNow.hour_of_day).padStart(2, '0')}:00` : 'N/A'}</p>
+            <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(currentSlot))}%</p>
+          </div>
+          {upcomingHours.map((slot) => (
+            <div key={`hour-${slot.forecast_offset_hours}-${slot.day_of_week}-${slot.hour_of_day}`} className="risk_card risk_card_hour forecast_metric_card">
+              <h4>{`+${slot.forecast_offset_hours}h`}</h4>
+              <p className="risk_metric">{`${slot.day_label} ${String(slot.hour_of_day).padStart(2, '0')}:00`}</p>
+              <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(slot))}%</p>
+            </div>
+          ))}
+          <div className="risk_card risk_card_current_day forecast_metric_card">
+            <h4>Current Day</h4>
+            <p className="risk_metric">{contextNow ? contextNow.day_label : 'N/A'}</p>
+            <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(currentDaySummary))}%</p>
+          </div>
+          {upcomingDays.map((slot) => (
+            <div key={`day-${slot.forecast_offset_days}-${slot.day_of_week}`} className="risk_card risk_card_day forecast_metric_card">
+              <h4>{`+${slot.forecast_offset_days}d`}</h4>
+              <p className="risk_metric">{slot.day_label}</p>
+              <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(slot))}%</p>
+            </div>
+          ))}
+        </div>
+        <div className="forecast_main_grid">
           <div className="forecast_chart">
+            <div className="forecast_context_row">
+              {contextBadges.map((badge) => (
+                <div key={badge.label} className={`forecast_context_badge forecast_context_badge_${badge.status || 'stable'}`}>
+                  <span className="forecast_context_label">{badge.label}</span>
+                  <strong className="forecast_context_value">{badge.value_label}</strong>
+                  <span className="forecast_context_detail">{badge.detail}</span>
+                </div>
+              ))}
+            </div>
             {/* Stage-specific bottleneck risk by hour (today) */}
             <Plot
               data={[
                 {
-                  x: stageHourlyRisk.map((r) => r.time_label),
+                  x: stageHourValues,
                   y: stageHourlyRisk.map((r) => Number(r.vital || 0)),
                   type: 'scatter',
                   mode: 'lines',
                   name: 'Vitals',
-                  line: { color: '#2563eb', width: 2 }
+                  line: { color: '#2E5BFF', width: 3, dash: 'solid' }
                 },
                 {
-                  x: stageHourlyRisk.map((r) => r.time_label),
+                  x: stageHourValues,
                   y: stageHourlyRisk.map((r) => Number(r.medrecon || 0)),
                   type: 'scatter',
                   mode: 'lines',
                   name: 'Med Recon',
-                  line: { color: '#f59e0b', width: 2 }
+                  line: { color: '#F59E0B', width: 3, dash: 'solid' }
                 },
                 {
-                  x: stageHourlyRisk.map((r) => r.time_label),
+                  x: stageHourValues,
                   y: stageHourlyRisk.map((r) => Number(r.dispen || 0)),
                   type: 'scatter',
                   mode: 'lines',
                   name: 'Dispensing',
-                  line: { color: '#9333ea', width: 2 }
+                  line: { color: '#10B981', width: 3, dash: 'solid' }
                 },
                 {
-                  x: stageHourlyRisk.map((r) => r.time_label),
+                  x: stageHourValues,
                   y: stageHourlyRisk.map((r) => Number(r.discharge || 0)),
                   type: 'scatter',
                   mode: 'lines',
                   name: 'Discharge',
-                  line: { color: '#dc2626', width: 2 }
+                  line: { color: '#64748B', width: 3, dash: 'dash' }
                 }
               ]}
               layout={{
                 height: 350,
                 margin: { t: 30, b: 60, l: 60, r: 20 },
                 xaxis: {
-                  title: { text: 'Hour (Today)', standoff: 15 },
+                  title: { text: 'Hour of Day', standoff: 15 },
+                  type: 'linear',
+                  tickmode: 'array',
+                  tickvals: stageHourValues,
+                  ticktext: stageHourTickText,
+                  range: [-0.5, 23.5],
                   automargin: true,
-                  tickangle: -45
+                  showgrid: true,
+                  gridcolor: '#F1F5F9'
                 },
                 yaxis: {
                   title: { text: 'Bottleneck Risk (%)', standoff: 15 },
                   automargin: true,
+                  showgrid: true,
+                  gridcolor: '#F1F5F9',
                   range: [0, 100]
                 },
                 legend: { orientation: 'h', y: -0.25 },
                 paper_bgcolor: 'transparent',
                 plot_bgcolor: 'transparent',
-                shapes: contextNow ? [
+                shapes: [
                   {
                     type: 'line',
-                    x0: `${String(contextNow.hour_of_day).padStart(2, '0')}:00`,
-                    x1: `${String(contextNow.hour_of_day).padStart(2, '0')}:00`,
-                    y0: 0,
-                    y1: 100,
-                    line: { color: '#0f172a', dash: 'dot', width: 1 }
-                  }
-                ] : []
+                    x0: stageHourValues[0] ?? 0,
+                    x1: stageHourValues[stageHourValues.length - 1] ?? 23,
+                    y0: escalationThreshold,
+                    y1: escalationThreshold,
+                    line: { color: '#c2410c', dash: 'dash', width: 1.5 }
+                  },
+                  ...(contextNow ? [
+                    {
+                      type: 'line',
+                      x0: Number(contextNow.hour_of_day),
+                      x1: Number(contextNow.hour_of_day),
+                      y0: 0,
+                      y1: 100,
+                      line: { color: '#0f172a', dash: 'dot', width: 1 }
+                    }
+                  ] : [])
+                ],
+                annotations: [
+                  {
+                    x: stageHourValues[stageHourValues.length - 1] ?? 23,
+                    y: escalationThreshold,
+                    xanchor: 'right',
+                    yanchor: 'bottom',
+                    text: 'Escalation Threshold',
+                    showarrow: false,
+                    font: { size: 11, color: '#9a3412' },
+                    bgcolor: 'rgba(255,255,255,0.85)'
+                  },
+                  ...(contextNow ? [
+                    {
+                      x: Number(contextNow.hour_of_day),
+                      y: 100,
+                      xanchor: 'left',
+                      yanchor: 'top',
+                      text: 'Now',
+                      showarrow: false,
+                      font: { size: 11, color: '#0f172a' },
+                      bgcolor: 'rgba(255,255,255,0.85)'
+                    }
+                  ] : [])
+                ]
               }}
               useResizeHandler={true}
               style={{ width: '100%' }}
             />
           </div>
-          <div className="risk_cards_container">
-            <div className="risk_card">
-              <h4>Now</h4>
-              <p className="risk_metric">{contextNow ? `${contextNow.day_label} ${String(contextNow.hour_of_day).padStart(2, '0')}:00` : 'N/A'}</p>
-              <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(currentSlot))}%</p>
-            </div>
-            <div className="risk_card">
-              <h4>Next Hour</h4>
-              <p className="risk_metric">{contextNow ? `${contextNow.next_hour_day_label || contextNow.day_label} ${String(contextNow.next_hour_of_day).padStart(2, '0')}:00` : 'N/A'}</p>
-              <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(nextSlot))}%</p>
-            </div>
-            <div className="risk_card">
-              <h4>Today (Day-Level)</h4>
-              <p className="risk_metric">{contextNow ? contextNow.day_label : 'N/A'}</p>
-              <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(currentDaySummary))}%</p>
-            </div>
-            <div className="risk_card">
-              <h4>Next Day (Day-Level)</h4>
-              <p className="risk_metric">{contextNow ? contextNow.next_day_label : 'N/A'}</p>
-              <p className="risk_value">Max Stage Risk: {Math.round(maxStageRisk(nextDaySummary))}%</p>
-            </div>
-            <div className="risk_card">
+          <div className="forecast_panel_column">
+            <div className="risk_card risk_card_recommendations">
               <h4>Prep Recommendations</h4>
-              {stageAlerts.length ? (
-                <ul className="forecast_alert_list">
-                  {stageAlerts.slice(0, 3).map((alert) => (
-                    <li key={alert.stage}>
-                      <strong>{alert.stage_label}:</strong> {alert.recommendation}
-                    </li>
-                  ))}
-                </ul>
+              {hasAnyRecommendations ? (
+                <div className="forecast_recommendation_list">
+                  {stageStatusRecommendations.length ? (
+                    <div className="forecast_recommendation_section">
+                      <p className="forecast_recommendation_section_label">Current Bottleneck Detection</p>
+                      {stageStatusRecommendations.map((recommendation) => (
+                        <article key={recommendation.id} className={`forecast_recommendation_item forecast_recommendation_${recommendation.priority || 'high'}`}>
+                          <div className="forecast_recommendation_header">
+                            <strong>{recommendation.title}</strong>
+                            <span className="forecast_recommendation_time">{recommendation.badge}</span>
+                          </div>
+                          <p className="forecast_recommendation_message">{recommendation.message}</p>
+                          <p className="forecast_recommendation_action">{recommendation.action}</p>
+                          <p className="forecast_recommendation_staffing">Staffing Advisory: {recommendation.staffing}</p>
+                        </article>
+                      ))}
+                    </div>
+                  ) : null}
+                  {forecastRecommendations.length ? (
+                    <div className="forecast_recommendation_section">
+                      <p className="forecast_recommendation_section_label">Forecast Watch</p>
+                      {forecastRecommendations.map((recommendation) => (
+                        <article key={recommendation.id} className={`forecast_recommendation_item forecast_recommendation_${recommendation.priority || 'high'}`}>
+                          <div className="forecast_recommendation_header">
+                            <strong>{recommendation.title}</strong>
+                            <span className="forecast_recommendation_time">{recommendation.badge}</span>
+                          </div>
+                          <p className="forecast_recommendation_message">{recommendation.message}</p>
+                          <p className="forecast_recommendation_action">{recommendation.action}</p>
+                          <p className="forecast_recommendation_staffing">Staffing Advisory: {recommendation.staffing}</p>
+                        </article>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
               ) : (
-                <p className="risk_metric">No elevated next-hour stage risk detected.</p>
+                <p className="risk_metric">No bottleneck or forecast escalation recommendations available.</p>
               )}
             </div>
-            <div className="risk_card">
+            <div className="risk_card risk_card_pathways">
               <h4>High-Risk Patient Pathways</h4>
               {topFlowRisks.length ? (
-                <ul className="forecast_alert_list">
+                <div className="forecast_pathway_list">
                   {topFlowRisks.slice(0, 3).map((flow) => (
-                    <li key={flow.event_flow}>
-                      <strong>{flow.event_flow_label}</strong>: {Math.round(flow.avg_los_min)} min avg LOS ({flow.share_label || `${flow.share_pct}%`} of stays, n={flow.stay_count})
-                    </li>
+                    <article key={flow.event_flow} className="forecast_pathway_item">
+                      <div className="forecast_pathway_header">
+                        <strong>{Math.round(flow.avg_los_min)} min avg LOS</strong>
+                        <span className="forecast_pathway_driver">Primary Driver: {flow.primary_driver || 'Throughput Friction'}</span>
+                      </div>
+                      <div className="forecast_pathway_steps">
+                        {(flow.pathway_steps || []).map((step) => (
+                          <span key={`${flow.event_flow}-${step.key}`} className={`forecast_pathway_step ${step.is_primary ? 'is_primary' : ''}`}>
+                            {step.label}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="forecast_pathway_meta">
+                        Bottleneck Stage: <strong>{flow.primary_stage_label || 'Mixed'}</strong> · {flow.share_label || `${flow.share_pct}%`} of stays · n={flow.stay_count} · {flow.high_acuity_pct || 0}% high acuity
+                      </p>
+                      <p className="forecast_pathway_note">{flow.recommendation}</p>
+                    </article>
                   ))}
-                </ul>
+                </div>
               ) : (
                 <p className="risk_metric">No event flow pathway trends available yet.</p>
               )}
