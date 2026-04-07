@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Plot from 'react-plotly.js'; // You'll need to install this
+import { useNavigate } from 'react-router-dom';
 import BottleneckBanner from '../components/bottleneck_banner';
 import '../insights.css';
 import mockData from "../insights_mock.json";
@@ -164,6 +165,7 @@ function buildTrendLine(points) {
 }
 
 const InsightsPage = () => {
+  const navigate = useNavigate();
   const [insightsData, setInsightsData] = useState(null);
   const [heatmapData, setHeatmapData] = useState(null);
   const [error, setError] = useState(null);
@@ -182,10 +184,8 @@ useEffect(() => {
       const [
         logisticsRes,
         demographicsRes,
-        bottlenecksRes,
-        bottleneckStatusRes,
-        volumeEfficiencyRes,
         bedOccupancyAnalysisByCaseMixRes,
+        bottleneckStatusRes,
         p90TotalEdStayTimeVolumeCorrelationsRes,
         dispositionsRes,
         acuityRes,
@@ -205,7 +205,6 @@ useEffect(() => {
         fetch('http://localhost:8000/metrics/bottleneck-analysis', {
           signal: controller.signal
         }),
-        fetch('http://localhost:8000/insights/volume-efficiency-correlation', {
         fetch('http://localhost:8000/insights/p90-total-ed-stay-time-volume-correlations', {
           signal: controller.signal
         }),
@@ -244,11 +243,9 @@ useEffect(() => {
 
       const logisticsPayload = await logisticsRes.json();
       const demographicsPayload = await demographicsRes.json();
-      const bottlenecksPayload = await bottlenecksRes.json();
       const bottleneckStatusPayload = bottleneckStatusRes.ok
         ? await bottleneckStatusRes.json()
         : (mockData.bottleneck_analysis || { overall_status: 'No Data', banner_message: 'No bottleneck data available.', stages: [] });
-      const volumeEfficiencyPayload = await volumeEfficiencyRes.json();
       const bedOccupancyAnalysisByCaseMixPayload = await bedOccupancyAnalysisByCaseMixRes.json();
       const p90TotalEdStayTimeVolumeCorrelationsPayload =
         await p90TotalEdStayTimeVolumeCorrelationsRes.json();
@@ -341,6 +338,11 @@ useEffect(() => {
   const topFlowRisks = eventFlowForecast?.top_delay_flows || [];
   const contextBadges = Object.values(operationalContext).filter(Boolean);
   const stageStatusRecommendations = buildBottleneckRecommendations(bottleneckAnalysis);
+  const stageHourValues = stageHourlyRisk.map((slot, index) => {
+    const hourValue = Number(slot?.hour_of_day);
+    return Number.isFinite(hourValue) ? hourValue : index;
+  });
+  const stageHourTickText = stageHourValues.map((hour) => `${String(hour).padStart(2, '0')}:00`);
   const forecastRecommendations = stageAlerts.map((alert) => ({
     id: `forecast-${alert.stage}`,
     stageKey: `time_to_${alert.stage}`,
@@ -375,6 +377,18 @@ useEffect(() => {
 
     return (
     <div className="insights_container">
+      <section className="insights_page_toolbar">
+        <div>
+          <p className="insights_page_eyebrow">Operational Intelligence</p>
+          <h2 className="insights_page_title">Insights</h2>
+        </div>
+        <button
+          className="insights_nav_button"
+          onClick={() => navigate('/view_metrics')}
+        >
+          View Metrics
+        </button>
+      </section>
       {isUsingMockData ? (
         <section className="insight_block insights_status_warning">
           <p className="insights_status_message">
@@ -427,7 +441,7 @@ useEffect(() => {
             <Plot
               data={[
                 {
-                  x: stageHourlyRisk.map((r) => r.time_label),
+                  x: stageHourValues,
                   y: stageHourlyRisk.map((r) => Number(r.vital || 0)),
                   type: 'scatter',
                   mode: 'lines',
@@ -435,7 +449,7 @@ useEffect(() => {
                   line: { color: '#2E5BFF', width: 3, dash: 'solid' }
                 },
                 {
-                  x: stageHourlyRisk.map((r) => r.time_label),
+                  x: stageHourValues,
                   y: stageHourlyRisk.map((r) => Number(r.medrecon || 0)),
                   type: 'scatter',
                   mode: 'lines',
@@ -443,7 +457,7 @@ useEffect(() => {
                   line: { color: '#F59E0B', width: 3, dash: 'solid' }
                 },
                 {
-                  x: stageHourlyRisk.map((r) => r.time_label),
+                  x: stageHourValues,
                   y: stageHourlyRisk.map((r) => Number(r.dispen || 0)),
                   type: 'scatter',
                   mode: 'lines',
@@ -451,7 +465,7 @@ useEffect(() => {
                   line: { color: '#10B981', width: 3, dash: 'solid' }
                 },
                 {
-                  x: stageHourlyRisk.map((r) => r.time_label),
+                  x: stageHourValues,
                   y: stageHourlyRisk.map((r) => Number(r.discharge || 0)),
                   type: 'scatter',
                   mode: 'lines',
@@ -463,11 +477,15 @@ useEffect(() => {
                 height: 350,
                 margin: { t: 30, b: 60, l: 60, r: 20 },
                 xaxis: {
-                  title: { text: 'Hour (Today)', standoff: 15 },
+                  title: { text: 'Hour of Day', standoff: 15 },
+                  type: 'linear',
+                  tickmode: 'array',
+                  tickvals: stageHourValues,
+                  ticktext: stageHourTickText,
+                  range: [-0.5, 23.5],
                   automargin: true,
                   showgrid: true,
-                  gridcolor: '#F1F5F9',
-                  tickangle: -45
+                  gridcolor: '#F1F5F9'
                 },
                 yaxis: {
                   title: { text: 'Bottleneck Risk (%)', standoff: 15 },
@@ -482,8 +500,8 @@ useEffect(() => {
                 shapes: [
                   {
                     type: 'line',
-                    x0: stageHourlyRisk[0]?.time_label || '00:00',
-                    x1: stageHourlyRisk[stageHourlyRisk.length - 1]?.time_label || '23:00',
+                    x0: stageHourValues[0] ?? 0,
+                    x1: stageHourValues[stageHourValues.length - 1] ?? 23,
                     y0: escalationThreshold,
                     y1: escalationThreshold,
                     line: { color: '#c2410c', dash: 'dash', width: 1.5 }
@@ -491,8 +509,8 @@ useEffect(() => {
                   ...(contextNow ? [
                     {
                       type: 'line',
-                      x0: `${String(contextNow.hour_of_day).padStart(2, '0')}:00`,
-                      x1: `${String(contextNow.hour_of_day).padStart(2, '0')}:00`,
+                      x0: Number(contextNow.hour_of_day),
+                      x1: Number(contextNow.hour_of_day),
                       y0: 0,
                       y1: 100,
                       line: { color: '#0f172a', dash: 'dot', width: 1 }
@@ -501,7 +519,7 @@ useEffect(() => {
                 ],
                 annotations: [
                   {
-                    x: stageHourlyRisk[stageHourlyRisk.length - 1]?.time_label || '23:00',
+                    x: stageHourValues[stageHourValues.length - 1] ?? 23,
                     y: escalationThreshold,
                     xanchor: 'right',
                     yanchor: 'bottom',
@@ -512,7 +530,7 @@ useEffect(() => {
                   },
                   ...(contextNow ? [
                     {
-                      x: `${String(contextNow.hour_of_day).padStart(2, '0')}:00`,
+                      x: Number(contextNow.hour_of_day),
                       y: 100,
                       xanchor: 'left',
                       yanchor: 'top',

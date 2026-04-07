@@ -26,10 +26,67 @@
   font-size: 0.95rem;
 }
 
+.insights_page_toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.insights_page_eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.insights_page_title {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.1;
+  color: #0f172a;
+}
+
+.insights_nav_button {
+  border: 1px solid #1d4ed8;
+  border-radius: 999px;
+  padding: 0.8rem 1.2rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.insights_nav_button:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff;
+}
+
+.insights_nav_button:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.3);
+  outline-offset: 2px;
+}
+
 .insights_middle_row {
   display: grid;
   grid-template-columns: 1fr 1fr; /* Two columns for Heatmap and Logistics */
   gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .insights_page_toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .insights_nav_button {
+    width: 100%;
+  }
 }
 
 .forecast_grid, .audit_grid {
