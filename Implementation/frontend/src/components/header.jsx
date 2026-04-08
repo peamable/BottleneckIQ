@@ -57,7 +57,7 @@ const Header = ({ uploadIdFromUrl }) => {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'bottleneckiq-operational-intelligence-audit.pdf';
+            a.download = 'BottleneckIQ Operational Report.pdf';
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
