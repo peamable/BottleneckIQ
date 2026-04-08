@@ -123,7 +123,7 @@ const Header = ({ uploadIdFromUrl }) => {
                     Main
                 </button>
                 <button className="report-button" onClick={handleGenerateReport}>
-                    Operational Intelligence Audit
+                    Generate Operational Report
                 </button>
                 {user ? (
                     <button className="header-logout-button" onClick={handleLogout}>
