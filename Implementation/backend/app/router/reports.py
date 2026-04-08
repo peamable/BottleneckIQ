@@ -25,7 +25,7 @@ from app.services.insights_services import (
     get_p90_total_ed_stay_time_volume_correlations,
     get_stage_temporal_forecast,
     get_temporal_heatmap,
-    get_top_chief_complaints, 
+   # get_top_chief_complaints, 
     
 )
 from app.services.metrics_services import (
@@ -311,16 +311,13 @@ def generate_pdf_report(background_tasks: BackgroundTasks):
                 dashboard_summary = get_dashboard_summary(effective_id)
                 trend_chart = get_performance_trend_data(lookback=8)
                 pipeline_summary = _build_pipeline_summary(effective_id)
-                data["logistics"] = {
-                    "logistics_root_cause": {
-                        "disposition_mix": get_disposition_mix(effective_id),
-                        "top_chief_complaints": get_top_chief_complaints(effective_id)
-                    }
+                data["patient_flow_analysis"] = {
+                    "disposition_mix": get_disposition_mix(effective_id),
+                    "bed_occupancy_analysis_by_case_mix": get_bed_occupancy_analysis_by_case_mix(effective_id),
                 }
                 data["demographics"] = {
                     "equity_audit": get_equity_audit(effective_id)
                 }
-                data["bed_occupancy_analysis_by_case_mix"] = get_bed_occupancy_analysis_by_case_mix(effective_id)
                 data["p90_total_ed_stay_time_volume_correlations"] = get_p90_total_ed_stay_time_volume_correlations()
                 data["dispositions"] = get_disposition_milestone_breakdown(effective_id)
                 data["acuity"] = get_acuity_level_breakdown(effective_id)
@@ -334,9 +331,11 @@ def generate_pdf_report(background_tasks: BackgroundTasks):
                 data["pipeline_summary"] = pipeline_summary
             else:
                 data = {
-                    "logistics": {"logistics_root_cause": {"disposition_mix": [], "top_chief_complaints": []}},
+                    "patient_flow_analysis": {
+                        "disposition_mix": [],
+                        "bed_occupancy_analysis_by_case_mix": [],
+                    },
                     "demographics": {"equity_audit": []},
-                    "bed_occupancy_analysis_by_case_mix": [],
                     "p90_total_ed_stay_time_volume_correlations": [],
                     "dispositions": [],
                     "acuity": [],
@@ -435,25 +434,20 @@ def generate_pdf_report(background_tasks: BackgroundTasks):
             ))
             story.append(Spacer(1, 14))
         
-        if 'logistics' in data and 'logistics_root_cause' in data['logistics']:
+        if 'patient_flow_analysis' in data:
             story.append(Paragraph("Patient Disposition Analysis", subsection_style))
-            logistics = data['logistics']['logistics_root_cause']
+            patient_flow_analysis = data['patient_flow_analysis']
             
-            if 'disposition_mix' in logistics:
+            if 'disposition_mix' in patient_flow_analysis:
                 disp_data = [['Disposition Type', 'Count', 'Percentage']]
-                for item in logistics['disposition_mix']:
+                for item in patient_flow_analysis['disposition_mix']:
                     disp_data.append([item['type'], str(item['count']), f"{item['percentage']}%"])
                 story.append(_build_table(disp_data))
                 story.append(Spacer(1, 15))
-        
-        if 'bottlenecks' in data:
-            story.append(Paragraph("Chief Complaint Bottlenecks", subsection_style))
-            bottlenecks = data['bottlenecks']
-        # Bed Occupancy Analysis by Case Mix
-        if 'bed_occupancy_analysis_by_case_mix' in data:
+
+            bed_occupancy_analysis_by_case_mix = patient_flow_analysis.get('bed_occupancy_analysis_by_case_mix', [])
             story.append(Paragraph("Bed Occupancy Analysis by Case Mix", subsection_style))
-            bed_occupancy_analysis_by_case_mix = data['bed_occupancy_analysis_by_case_mix']
-            
+
             if isinstance(bed_occupancy_analysis_by_case_mix, list) and bed_occupancy_analysis_by_case_mix:
                 cc_data = [['Case Mix', 'Bed-Hours', 'Avg LOS (hrs)', 'Transfer Rate']]
                 for item in bed_occupancy_analysis_by_case_mix[:10]:  # Top 10

@@ -8,26 +8,25 @@ router = APIRouter(
 )
 
 
-@router.get("/logistics_root_cause")
-async def get_logistics_root_cause( upload_id: Optional[int] = Query(None)
-):
+@router.get("/patient_flow_analysis")
+async def get_patient_flow_analysis(upload_id: Optional[int] = Query(None)):
     effective_id = upload_id or service.get_latest_upload_id()
 
     if effective_id is None:
         return {
             "upload_id": None,
-            "logistics_root_cause": {
+            "patient_flow_analysis": {
                 "disposition_mix": [],
-                "top_chief_complaints": []
+                "bed_occupancy_analysis_by_case_mix": [],
             },
             "message": "No data available"
         }
 
     return {
         "upload_id": effective_id,
-        "logistics_root_cause": {
+        "patient_flow_analysis": {
             "disposition_mix": service.get_disposition_mix(effective_id),
-            "top_chief_complaints": service.get_top_chief_complaints(effective_id)
+            "bed_occupancy_analysis_by_case_mix": service.get_bed_occupancy_analysis_by_case_mix(effective_id),
         }
     }
 
@@ -49,38 +48,6 @@ async def get_demographics_audit( upload_id: Optional[int] = Query(None)
         
     }
 
-# @router.get("/chief_complaint_counts")
-# async def get_chief_complaint_counts( upload_id: Optional[int] = Query(None)
-# ):
-#     effective_id = upload_id or service.get_latest_upload_id()
-
-#     if effective_id is None:
-#         return {
-#             "upload_id": None,
-#             "chief_complaint_counts": [],
-#             "message": "No data available"
-#         }
-
-#     return {
-#         "upload_id": effective_id,
-#         "chief_complaint_counts": service.get_chief_complaint_counts(effective_id)
-#     }
-
-@router.get("/bed-occupancy-analysis-by-case-mix")
-async def get_bed_occupancy_analysis_by_case_mix(upload_id: Optional[int] = Query(None)):
-    effective_id = upload_id or service.get_latest_upload_id()
-
-    if effective_id is None:
-        return {
-            "upload_id": None,
-            "bed_occupancy_analysis_by_case_mix": [],
-            "message": "No data available"
-        }
-
-    return {
-        "upload_id": effective_id,
-        "bed_occupancy_analysis_by_case_mix": service.get_bed_occupancy_analysis_by_case_mix(effective_id)
-    }
 
 @router.get("/p90-total-ed-stay-time-volume-correlations")
 async def get_p90_total_ed_stay_time_volume_correlations():

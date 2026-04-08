@@ -16,7 +16,7 @@ const formatStageList = (stages = []) => {
   return `${names.slice(0, -1).join(', ')}, AND ${names[names.length - 1]}`;
 };
 
-const BottleneckBanner = ({ summary }) => {
+const BottleneckBanner = ({ summary, uploadId }) => {
   const navigate = useNavigate();
   const bottleneckStages = summary?.stages?.filter((stage) => stage.status === 'Bottleneck') || [];
   const needsImprovementStages =
@@ -49,12 +49,17 @@ const BottleneckBanner = ({ summary }) => {
     headline = summary.banner_message;
   }
 
+  const navigateToInsights = () => {
+    const target = uploadId ? `/insights?upload_id=${uploadId}` : '/insights';
+    navigate(target, uploadId ? { state: { upload_id: uploadId } } : undefined);
+  };
+
   if (!isBottleneck && !isNeedsImprovement) {
     return (
       <div className="banner_button_only">
         <button
           className="banner_action_btn banner_action_btn_blue"
-          onClick={() => navigate('/insights')}
+          onClick={navigateToInsights}
         > Insights<ChevronRight size={18} /></button>
       </div>
     );
@@ -89,7 +94,7 @@ const BottleneckBanner = ({ summary }) => {
 
       <button 
         className="banner_action_btn" 
-        onClick={() => navigate('/insights')}
+        onClick={navigateToInsights}
       > Insights<ChevronRight size={18} /></button>
     </div>
   );

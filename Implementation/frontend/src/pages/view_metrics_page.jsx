@@ -357,7 +357,7 @@ const ViewMetrics = () => {
         
         {/* 1. SYSTEM STATUS BANNER */}
         <section className="dashboard_header_section">
-          <BottleneckBanner summary={bottleneckSummary} /> 
+          <BottleneckBanner summary={bottleneckSummary} uploadId={requestedUploadId} /> 
         </section>
 
         

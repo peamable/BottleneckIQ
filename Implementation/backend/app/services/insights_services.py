@@ -803,49 +803,6 @@ def get_disposition_mix(upload_id: int) -> dict:
 
     return disposition_mix
 
-# # chiefcomplaint top 5 bar chart visualization
-# def get_top_chief_complaints(upload_id: int) -> dict:
-#     query = text("""
-#         WITH stay_duration AS (
-#             SELECT
-#                 stay_id,
-#                 upload_id,
-#                 MAX(total_ed_stay_time) AS total_ed_stay_time
-#             FROM event_log
-#             WHERE total_ed_stay_time IS NOT NULL
-#               AND upload_id = :upload_id
-#             GROUP BY stay_id, upload_id
-#         )
-#         SELECT
-#             si.chiefcomplaint,
-#             COUNT(*) AS cnt,
-#             AVG(sd.total_ed_stay_time) AS avg_total_ed_stay_time
-#         FROM stay_info si
-#         JOIN stay_duration sd
-#             ON si.stay_id = sd.stay_id
-#            AND si.upload_id = sd.upload_id
-#         WHERE si.upload_id = :upload_id
-#           AND si.chiefcomplaint IS NOT NULL
-#           AND si.chiefcomplaint <> ''
-#         GROUP BY si.chiefcomplaint
-#         ORDER BY cnt DESC
-#         LIMIT 5
-#     """)
-
-#     with engine.connect() as conn:
-#         rows = conn.execute(query, {"upload_id": upload_id}).mappings().all()
-
-#     top_chief_complaints = [
-#         {
-#             "chiefcomplaint": r["chiefcomplaint"],
-#             "count": r["cnt"],
-#             "avg_total_ed_stay_time": float(round(r["avg_total_ed_stay_time"], 2)) if r["avg_total_ed_stay_time"] is not None else None
-#         }
-#         for r in rows
-#     ]
-
-#     return top_chief_complaints
-
 # # chief complaint count bar chart visualization
 # def get_chief_complaint_counts(upload_id: int) -> list[dict]:
 #     query = text("""

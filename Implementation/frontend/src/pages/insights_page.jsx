@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Plot from 'react-plotly.js'; // You'll need to install this
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import BottleneckBanner from '../components/bottleneck_banner';
 import '../insights.css';
 import mockData from "../insights_mock.json";
@@ -165,7 +165,10 @@ function buildTrendLine(points) {
 }
 
 const InsightsPage = () => {
+  const location = useLocation();
   const navigate = useNavigate();
+  const requestedUploadId =
+    location.state?.upload_id ?? new URLSearchParams(location.search).get('upload_id');
   const [insightsData, setInsightsData] = useState(null);
   const [heatmapData, setHeatmapData] = useState(null);
   const [error, setError] = useState(null);
@@ -174,6 +177,10 @@ const InsightsPage = () => {
 
 useEffect(() => {
   const controller = new AbortController();
+  const buildInsightsUrl = (path) =>
+    requestedUploadId
+      ? `http://localhost:8000${path}?upload_id=${requestedUploadId}`
+      : `http://localhost:8000${path}`;
 
   const fetchInsights = async () => {
     try {
@@ -182,9 +189,8 @@ useEffect(() => {
       setIsUsingMockData(false);
 
       const [
-        logisticsRes,
+        patientFlowAnalysisRes,
         demographicsRes,
-        bedOccupancyAnalysisByCaseMixRes,
         bottleneckStatusRes,
         p90TotalEdStayTimeVolumeCorrelationsRes,
         dispositionsRes,
@@ -193,44 +199,38 @@ useEffect(() => {
         stageTemporalRes,
         eventFlowRes
       ] = await Promise.all([
-        fetch('http://localhost:8000/insights/logistics_root_cause', {
+        fetch(buildInsightsUrl('/insights/patient_flow_analysis'), {
           signal: controller.signal
         }),
-        fetch('http://localhost:8000/insights/demographics_audit', {
+        fetch(buildInsightsUrl('/insights/demographics_audit'), {
           signal: controller.signal
         }),
-        fetch('http://localhost:8000/insights/bed-occupancy-analysis-by-case-mix', {
-          signal: controller.signal
-        }),
-        fetch('http://localhost:8000/metrics/bottleneck-analysis', {
+        fetch(buildInsightsUrl('/metrics/bottleneck-analysis'), {
           signal: controller.signal
         }),
         fetch('http://localhost:8000/insights/p90-total-ed-stay-time-volume-correlations', {
           signal: controller.signal
         }),
-        fetch('http://localhost:8000/insights/disposition_milestone_analysis', {
+        fetch(buildInsightsUrl('/insights/disposition_milestone_analysis'), {
           signal: controller.signal
         }),
-        fetch('http://localhost:8000/insights/acuity_level_analysis', {
+        fetch(buildInsightsUrl('/insights/acuity_level_analysis'), {
           signal: controller.signal
         }),
-        fetch('http://localhost:8000/insights/temporal_heatmap', {
+        fetch(buildInsightsUrl('/insights/temporal_heatmap'), {
           signal: controller.signal
         }),
-        fetch('http://localhost:8000/insights/stage_temporal_forecast', {
+        fetch(buildInsightsUrl('/insights/stage_temporal_forecast'), {
           signal: controller.signal
         }),
-        fetch('http://localhost:8000/insights/event_flow_forecast', {
+        fetch(buildInsightsUrl('/insights/event_flow_forecast'), {
           signal: controller.signal
         })
       ]);
-      if (!logisticsRes.ok) throw new Error(`Logistics Error: ${logisticsRes.status}`);
-      if (!demographicsRes.ok) throw new Error(`Demographics Error: ${demographicsRes.status}`);
-      if (!bedOccupancyAnalysisByCaseMixRes.ok) {
-        throw new Error(
-          `Bed Occupancy Analysis by Case Mix Error: ${bedOccupancyAnalysisByCaseMixRes.status}`
-        );
+      if (!patientFlowAnalysisRes.ok) {
+        throw new Error(`Patient Flow Analysis Error: ${patientFlowAnalysisRes.status}`);
       }
+      if (!demographicsRes.ok) throw new Error(`Demographics Error: ${demographicsRes.status}`);
       if (!p90TotalEdStayTimeVolumeCorrelationsRes.ok) {
         throw new Error(
           `P90 Total ED Stay Time vs. Patient Volume Correlations Error: ${p90TotalEdStayTimeVolumeCorrelationsRes.status}`
@@ -241,12 +241,11 @@ useEffect(() => {
       if (!stageTemporalRes.ok) throw new Error(`Stage Temporal Forecast Error: ${stageTemporalRes.status}`);
       if (!eventFlowRes.ok) throw new Error(`Event Flow Forecast Error: ${eventFlowRes.status}`);
 
-      const logisticsPayload = await logisticsRes.json();
+      const patientFlowAnalysisPayload = await patientFlowAnalysisRes.json();
       const demographicsPayload = await demographicsRes.json();
       const bottleneckStatusPayload = bottleneckStatusRes.ok
         ? await bottleneckStatusRes.json()
         : (mockData.bottleneck_analysis || { overall_status: 'No Data', banner_message: 'No bottleneck data available.', stages: [] });
-      const bedOccupancyAnalysisByCaseMixPayload = await bedOccupancyAnalysisByCaseMixRes.json();
       const p90TotalEdStayTimeVolumeCorrelationsPayload =
         await p90TotalEdStayTimeVolumeCorrelationsRes.json();
       const dispositionsPayload = await dispositionsRes.json();
@@ -258,14 +257,13 @@ useEffect(() => {
 
       setInsightsData(prev => ({
         ...(prev || {}),
-        logistics_root_cause: {
-          ...((prev && prev.logistics_root_cause) || {}),
-          disposition_mix: logisticsPayload.logistics_root_cause.disposition_mix || [],
-          top_chief_complaints: logisticsPayload.logistics_root_cause.top_chief_complaints || []
+        patient_flow_analysis: {
+          ...((prev && prev.patient_flow_analysis) || {}),
+          disposition_mix: patientFlowAnalysisPayload.patient_flow_analysis.disposition_mix || [],
+          bed_occupancy_analysis_by_case_mix:
+            patientFlowAnalysisPayload.patient_flow_analysis.bed_occupancy_analysis_by_case_mix || []
         },
         equity_audit: demographicsPayload.equity_audit || [],
-        bed_occupancy_analysis_by_case_mix:
-          bedOccupancyAnalysisByCaseMixPayload.bed_occupancy_analysis_by_case_mix || [],
         bottleneck_analysis: bottleneckStatusPayload || null,
         p90_total_ed_stay_time_volume_correlations:
           p90TotalEdStayTimeVolumeCorrelationsPayload.p90_total_ed_stay_time_volume_correlations || [],
@@ -288,7 +286,7 @@ useEffect(() => {
 
   fetchInsights();
   return () => controller.abort(); // Cleanup
-}, []);
+}, [requestedUploadId]);
 
   const correlationPoints = (insightsData?.p90_total_ed_stay_time_volume_correlations || [])
     .map((item) => ({
@@ -303,7 +301,9 @@ useEffect(() => {
   // Fit the chart to the observed data so small datasets do not sit in a huge static range.
   const correlationXRange = getAxisRange(correlationX, { minPad: 10, padRatio: 0.12 });
   const correlationYRange = getAxisRange(correlationY, { minPad: 10, padRatio: 0.12 });
-  const dispositionMix = insightsData?.logistics_root_cause?.disposition_mix || [];
+  const dispositionMix = insightsData?.patient_flow_analysis?.disposition_mix || [];
+  const bedOccupancyAnalysisByCaseMix =
+    insightsData?.patient_flow_analysis?.bed_occupancy_analysis_by_case_mix || [];
   const dispositionTotalCount = dispositionMix.every((item) => Number.isFinite(Number(item.count)))
     ? dispositionMix.reduce((total, item) => total + Number(item.count), 0)
     : null;
@@ -384,7 +384,10 @@ useEffect(() => {
         </div>
         <button
           className="insights_nav_button"
-          onClick={() => navigate('/view_metrics')}
+          onClick={() => navigate(
+            requestedUploadId ? `/view_metrics?upload_id=${requestedUploadId}` : '/view_metrics',
+            requestedUploadId ? { state: { upload_id: requestedUploadId } } : undefined
+          )}
         >
           View Metrics
         </button>
@@ -656,10 +659,10 @@ useEffect(() => {
         </section>
 
         {/* SECTION 3: ARRIVAL & DISPOSITION */}
-        <section className="insight_block logistics_root_cause">
+        <section className="insight_block patient_flow_analysis">
           <h3>Patient Flow Analysis</h3>
           {/* Plotly Bar/Sankey Chart */}
-          <div className="logistics_grid_container" style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }}>
+          <div className="patient_flow_analysis_grid_container" style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '20px' }}>
           
        {/* Part A: Disposition Pie Chart */}
     <div className="chart_wrapper">
@@ -697,15 +700,15 @@ useEffect(() => {
     {/* Part B: Bed Occupancy Analysis Bar Chart */}
     <div className="chart_wrapper">
       <h4>Bed Occupancy Analysis by Case Mix</h4>
-      <Plot
-        data={[{
-          x: insightsData?.bed_occupancy_analysis_by_case_mix?.map(c => c.value) || [],
-          y: insightsData?.bed_occupancy_analysis_by_case_mix?.map(c => c.label.replaceAll('_', ' ')) || [],
+        <Plot
+          data={[{
+          x: bedOccupancyAnalysisByCaseMix.map(c => c.value) || [],
+          y: bedOccupancyAnalysisByCaseMix.map(c => c.label.replaceAll('_', ' ')) || [],
           type: 'bar',
           orientation: 'h',
           marker: { color: '#6366f1' },
-          text: insightsData?.bed_occupancy_analysis_by_case_mix?.map(c => `${c.count} patients`) || [],
-          customdata: insightsData?.bed_occupancy_analysis_by_case_mix?.map(c => [c.avg_los, c.transfer_pct]) || [],
+          text: bedOccupancyAnalysisByCaseMix.map(c => `${c.count} patients`) || [],
+          customdata: bedOccupancyAnalysisByCaseMix.map(c => [c.avg_los, c.transfer_pct]) || [],
           hovertemplate:
             'Category: %{y}<br>' +
             'Total bed-hours: %{x}<br>' +
