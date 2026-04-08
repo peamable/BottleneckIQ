@@ -144,7 +144,7 @@ npm install
 npm run dev
 ```
 
-The frontend uses Vite and will usually be available at `http://localhost:5173`.
+The frontend uses Vite and will be available at `http://localhost:5173`.
 
 ## 6. Recommended Run Order
 
