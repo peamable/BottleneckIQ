@@ -25,7 +25,6 @@ from app.services.insights_services import (
     get_p90_total_ed_stay_time_volume_correlations,
     get_stage_temporal_forecast,
     get_temporal_heatmap,
-   # get_top_chief_complaints, 
     
 )
 from app.services.metrics_services import (
