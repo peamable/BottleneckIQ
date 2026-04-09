@@ -97,17 +97,18 @@
 }
 
 .forecast_metric_row {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 0.45rem;
   margin-bottom: 1rem;
+  align-items: stretch;
 }
 
 .forecast_metric_card {
-  flex: 1 1 108px;
-  min-width: 108px;
-  max-width: 128px;
-  padding: 0.5rem 0.55rem;
+  min-width: 0;
+  max-width: none;
+  padding: 0.45rem 0.5rem;
 }
 
 .forecast_main_grid {
@@ -205,20 +206,24 @@
 
 .risk_card h4 {
   margin: 0 0 0.4rem;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   color: #334155;
+  line-height: 1.2;
 }
 
 .risk_metric {
   margin: 0.2rem 0;
   color: #475569;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
+  line-height: 1.2;
 }
 
 .risk_value {
   margin: 0.2rem 0;
   color: #1e293b;
   font-weight: 700;
+  font-size: 0.8rem;
+  line-height: 1.2;
 }
 
 .forecast_context_row {
@@ -416,9 +421,13 @@
 }
 
 @media (max-width: 720px) {
+  .forecast_metric_row {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
   .forecast_metric_card {
-    flex-basis: 140px;
-    max-width: none;
+    padding: 0.55rem 0.6rem;
   }
 }
 
